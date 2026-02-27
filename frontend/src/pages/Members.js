@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
-import { Plus, Search, Phone, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Search, Phone, Calendar, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
