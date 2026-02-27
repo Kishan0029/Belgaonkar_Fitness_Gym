@@ -742,7 +742,7 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     c.drawString(1*inch, height - 5.4*inch, f"Payment Mode: {payment['payment_mode']}")
     
     # Footer
-    c.setFont("Helvetica-Italic", 10)
+    c.setFont("Helvetica", 10)
     c.drawString(1*inch, 1*inch, "Thank you for choosing Belgaonkar Fitness!")
     
     c.save()
