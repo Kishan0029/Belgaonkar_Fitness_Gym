@@ -1,0 +1,171 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "Belgaonkar Fitness Manager",
+      "persona": "E1 - The Anti-AI Designer (Functional Variant)",
+      "tone": "Professional, Efficient, Trustworthy, Local Business Friendly",
+      "core_philosophy": "Speed over flash. Clarity over decoration. Mobile utility first."
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Manrope, sans-serif",
+        "body": "Public Sans, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-3xl md:text-4xl font-bold tracking-tight",
+        "h2": "text-2xl md:text-3xl font-bold tracking-tight",
+        "h3": "text-xl md:text-2xl font-semibold",
+        "body_lg": "text-lg leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "body_sm": "text-sm leading-normal",
+        "caption": "text-xs text-muted-foreground uppercase tracking-wider"
+      },
+      "imports": [
+        "@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap');"
+      ]
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "DEFAULT": "#EA580C",
+          "foreground": "#FFFFFF",
+          "hover": "#C2410C",
+          "light": "#FFF7ED"
+        },
+        "secondary": {
+          "DEFAULT": "#F1F5F9",
+          "foreground": "#0F172A",
+          "hover": "#E2E8F0"
+        },
+        "background": {
+          "DEFAULT": "#FFFFFF",
+          "subtle": "#F8FAFC"
+        },
+        "surface": {
+          "DEFAULT": "#FFFFFF",
+          "hover": "#F8FAFC"
+        },
+        "text": {
+          "main": "#0F172A",
+          "muted": "#64748B",
+          "inverted": "#FFFFFF"
+        },
+        "status": {
+          "success": "#16A34A",
+          "warning": "#CA8A04",
+          "error": "#DC2626",
+          "info": "#2563EB"
+        },
+        "border": {
+          "DEFAULT": "#E2E8F0",
+          "focus": "#EA580C"
+        }
+      },
+      "usage_rules": {
+        "primary_action": "Use #EA580C (Orange-600) for main CTAs only.",
+        "background": "Keep main background White (#FFFFFF). Use #F8FAFC for sidebar/secondary areas.",
+        "text_contrast": "Ensure text is #0F172A on white backgrounds. Use #64748B for labels.",
+        "no_gradients": "Do not use gradients. Use solid colors."
+      }
+    },
+    "layout": {
+      "spacing": {
+        "container_padding": "p-4 md:p-6 lg:p-8",
+        "section_gap": "gap-6 md:gap-8",
+        "item_gap": "gap-3 md:gap-4"
+      },
+      "grid_system": {
+        "dashboard": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4",
+        "form": "grid grid-cols-1 md:grid-cols-2 gap-6",
+        "card_list": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      },
+      "containers": {
+        "main": "max-w-7xl mx-auto w-full",
+        "card": "bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+      },
+      "mobile_first": {
+        "touch_targets": "All interactive elements must be at least 44px (h-11 or h-12).",
+        "navigation": "Use a bottom tab bar or hamburger menu on mobile. Sidebar on desktop.",
+        "tables": "On mobile, convert tables to 'Card Lists' or scrollable horizontal tables."
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 rounded-lg font-semibold shadow-sm transition-colors",
+        "secondary": "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 h-12 px-6 rounded-lg font-medium transition-colors",
+        "ghost": "hover:bg-slate-100 text-slate-600 hover:text-slate-900 h-10 px-4 rounded-md font-medium",
+        "destructive": "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 h-12 px-6 rounded-lg font-medium"
+      },
+      "inputs": {
+        "base": "h-12 px-4 rounded-lg border border-slate-200 bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400",
+        "label": "block text-sm font-medium text-slate-700 mb-1.5"
+      },
+      "cards": {
+        "base": "bg-white rounded-xl border border-slate-200 shadow-sm p-5",
+        "interactive": "bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
+      },
+      "badges": {
+        "success": "bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full text-xs font-medium",
+        "warning": "bg-yellow-50 text-yellow-700 border border-yellow-200 px-2.5 py-0.5 rounded-full text-xs font-medium",
+        "error": "bg-red-50 text-red-700 border border-red-200 px-2.5 py-0.5 rounded-full text-xs font-medium",
+        "neutral": "bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full text-xs font-medium"
+      }
+    },
+    "visual_enhancers": {
+      "shadows": {
+        "sm": "shadow-sm",
+        "md": "shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03)]",
+        "lg": "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_4px_6px_-2px_rgba(0,0,0,0.025)]"
+      },
+      "borders": {
+        "default": "border border-slate-200",
+        "active": "border-primary"
+      },
+      "radius": {
+        "default": "rounded-lg",
+        "large": "rounded-xl",
+        "full": "rounded-full"
+      }
+    },
+    "assets": {
+      "logo": {
+        "url": "https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png",
+        "alt": "Belgaonkar Fitness Logo",
+        "usage": "Use in Sidebar (Desktop) and Login Page. Max height 40px."
+      },
+      "icons": {
+        "library": "lucide-react",
+        "style": "Stroke width 2px, size 20px or 24px."
+      }
+    },
+    "accessibility": {
+      "contrast": "Ensure 4.5:1 contrast ratio for normal text.",
+      "focus": "Visible focus rings on all interactive elements (ring-2 ring-primary/20).",
+      "aria": "Use aria-labels for icon-only buttons."
+    },
+    "universal_guidelines": {
+      "do_not": [
+        "Do not use gradients.",
+        "Do not use dark mode by default (force light mode).",
+        "Do not use tiny text (< 14px) for main content.",
+        "Do not use complex animations (only simple hover/active states).",
+        "Do not use 'Inter' font for headings."
+      ],
+      "must_do": [
+        "Use 'Manrope' for headings and 'Public Sans' for body.",
+        "Ensure all buttons are at least 44px high for mobile touch.",
+        "Use the provided logo URL.",
+        "Add 'data-testid' to all interactive elements.",
+        "Use 'sonner' for toast notifications.",
+        "Use 'lucide-react' for icons."
+      ]
+    },
+    "instructions_to_main_agent": {
+      "setup": "Install 'lucide-react', 'clsx', 'tailwind-merge', 'sonner' if not present.",
+      "file_structure": "Use .js or .jsx extensions if TypeScript is not set up. If .tsx is available, use it.",
+      "theme_config": "Update tailwind.config.js to use the specific orange color (#EA580C) as 'primary'.",
+      "global_css": "Import the Google Fonts in index.css or index.html."
+    }
+  }
+}
