@@ -218,7 +218,7 @@ const Payments = () => {
 
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-border">
-            {payments.map((payment) => {
+            {filteredPayments.map((payment) => {
               const member = members[payment.member_id];
               return (
                 <div key={payment.id} className="p-4">
