@@ -357,23 +357,29 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
     if not package:
         raise HTTPException(status_code=404, detail="Package not found")
     
-    expiry_date = member_data.join_date + timedelta(days=package["duration_days"])
+    expiry_date = member_data.membership_start_date + timedelta(days=package["duration_days"])
     
     member = Member(
         full_name=member_data.full_name,
         phone_number=member_data.phone_number,
         join_date=member_data.join_date,
+        membership_start_date=member_data.membership_start_date,
         package_id=member_data.package_id,
         expiry_date=expiry_date,
         payment_status=member_data.payment_status,
         total_amount=member_data.total_amount,
+        discount_amount=member_data.discount_amount,
         amount_paid=member_data.amount_paid,
         assigned_trainer=member_data.assigned_trainer,
-        date_of_birth=member_data.date_of_birth
+        date_of_birth=member_data.date_of_birth,
+        pt_plan=member_data.pt_plan,
+        pt_price=member_data.pt_price,
+        extension_days=0
     )
     
     member_dict = member.model_dump()
     member_dict["join_date"] = member_dict["join_date"].isoformat()
+    member_dict["membership_start_date"] = member_dict["membership_start_date"].isoformat()
     member_dict["expiry_date"] = member_dict["expiry_date"].isoformat()
     member_dict["created_at"] = member_dict["created_at"].isoformat()
     if member_dict.get("date_of_birth"):
