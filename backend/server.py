@@ -109,14 +109,19 @@ class Member(BaseModel):
     full_name: str
     phone_number: str
     join_date: datetime
+    membership_start_date: datetime
     package_id: str
     expiry_date: datetime
     payment_status: str
     total_amount: float
+    discount_amount: float
     amount_paid: float
     assigned_trainer: Optional[str] = None
     date_of_birth: Optional[datetime] = None
+    pt_plan: Optional[str] = None
+    pt_price: float
     last_visit_date: Optional[datetime] = None
+    extension_days: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AttendanceCreate(BaseModel):
