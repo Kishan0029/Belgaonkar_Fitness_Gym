@@ -387,6 +387,22 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         member_dict["date_of_birth"] = member_dict["date_of_birth"].isoformat()
     
     await db.members.insert_one(member_dict)
+    
+    # Create payment record if amount paid
+    if member_data.amount_paid > 0:
+        invoice_number = f"INV-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+        payment = Payment(
+            member_id=member.id,
+            amount_paid=member_data.amount_paid,
+            payment_mode="Cash",
+            payment_date=member_data.join_date,
+            invoice_number=invoice_number
+        )
+        payment_dict = payment.model_dump()
+        payment_dict["payment_date"] = payment_dict["payment_date"].isoformat()
+        payment_dict["created_at"] = payment_dict["created_at"].isoformat()
+        await db.payments.insert_one(payment_dict)
+    
     return member
 
 @api_router.get("/members", response_model=List[Member])
