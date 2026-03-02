@@ -425,6 +425,8 @@ async def get_member(member_id: str, current_user: User = Depends(get_current_us
     
     if isinstance(member.get("join_date"), str):
         member["join_date"] = datetime.fromisoformat(member["join_date"])
+    if isinstance(member.get("membership_start_date"), str):
+        member["membership_start_date"] = datetime.fromisoformat(member["membership_start_date"])
     if isinstance(member.get("expiry_date"), str):
         member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
     if isinstance(member.get("created_at"), str):
@@ -434,7 +436,44 @@ async def get_member(member_id: str, current_user: User = Depends(get_current_us
     if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
         member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
     
+    # Set defaults for new fields if missing
+    if "discount_amount" not in member:
+        member["discount_amount"] = 0.0
+    if "pt_plan" not in member:
+        member["pt_plan"] = None
+    if "pt_price" not in member:
+        member["pt_price"] = 0.0
+    if "extension_days" not in member:
+        member["extension_days"] = 0
+    if "membership_start_date" not in member:
+        member["membership_start_date"] = member["join_date"]
+    
     return Member(**member)
+
+@api_router.get("/members/{member_id}/attendance-stats")
+async def get_member_attendance_stats(member_id: str, current_user: User = Depends(get_current_user)):
+    """Check if member qualifies for extension due to low attendance"""
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Get attendance for last 30 days
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+    attendance_records = await db.attendance.find({
+        "member_id": member_id,
+        "checkin_time": {"$gte": thirty_days_ago.isoformat()}
+    }, {"_id": 0}).to_list(1000)
+    
+    attendance_count = len(attendance_records)
+    qualifies_for_extension = attendance_count <= 2
+    
+    return {
+        "member_id": member_id,
+        "attendance_last_30_days": attendance_count,
+        "qualifies_for_extension": qualifies_for_extension,
+        "extension_eligible": qualifies_for_extension,
+        "message": "Member attended only 1-2 days. Eligible for extension." if qualifies_for_extension else "Regular attendance. No extension needed."
+    }
 
 @api_router.patch("/members/{member_id}", response_model=Member)
 async def update_member(member_id: str, member_data: MemberUpdate, current_user: User = Depends(get_current_user)):
