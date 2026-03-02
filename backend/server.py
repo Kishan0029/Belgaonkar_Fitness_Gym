@@ -821,10 +821,28 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     
     package = await db.packages.find_one({"id": member["package_id"]}, {"_id": 0})
     
+    # Get all previous payments
+    all_payments = await db.payments.find({"member_id": payment["member_id"]}, {"_id": 0}).sort("payment_date", 1).to_list(100)
+    
+    # Calculate previous paid and current payment
+    previous_paid = sum(p["amount_paid"] for p in all_payments if p["id"] != payment_id)
+    current_paid = payment["amount_paid"]
+    total_paid_so_far = previous_paid + current_paid
+    balance_remaining = member["total_amount"] - total_paid_so_far
+    
     # Prepare dates
     payment_date = datetime.fromisoformat(payment["payment_date"]) if isinstance(payment["payment_date"], str) else payment["payment_date"]
     start_date = datetime.fromisoformat(member.get("membership_start_date", member["join_date"])) if isinstance(member.get("membership_start_date", member["join_date"]), str) else member.get("membership_start_date", member["join_date"])
     end_date = datetime.fromisoformat(member["expiry_date"]) if isinstance(member["expiry_date"], str) else member["expiry_date"]
+    
+    # Payment breakdown rows
+    breakdown_rows = ""
+    if previous_paid > 0:
+        breakdown_rows += f"<tr><td>Previous Payments</td><td>₹{previous_paid:.2f}</td></tr>"
+    breakdown_rows += f"<tr><td>Current Payment</td><td>₹{current_paid:.2f}</td></tr>"
+    breakdown_rows += f"<tr style='font-weight:bold;'><td>Total Paid</td><td>₹{total_paid_so_far:.2f}</td></tr>"
+    if balance_remaining > 0:
+        breakdown_rows += f"<tr style='color:#dc2626;'><td>Balance Due</td><td>₹{balance_remaining:.2f}</td></tr>"
     
     # HTML Template
     html = f"""<!DOCTYPE html>
@@ -966,19 +984,30 @@ Phone: {member['phone_number']}
 <th>Package</th>
 <th>Start Date</th>
 <th>End Date</th>
-<th>Price</th>
+<th>Total Amount</th>
 </tr>
 <tr>
 <td>{package['package_name'] if package else 'N/A'}</td>
 <td>{start_date.strftime('%d %B %Y')}</td>
 <td>{end_date.strftime('%d %B %Y')}</td>
-<td>₹{package['price'] if package else 0:.2f}</td>
+<td>₹{member['total_amount']:.2f}</td>
 </tr>
 </table>
 </div>
 
+<div class="section">
+<h3>Payment Breakdown</h3>
+<table>
+<tr>
+<th>Description</th>
+<th>Amount</th>
+</tr>
+{breakdown_rows}
+</table>
+</div>
+
 <div class="total">
-Amount Paid: ₹{payment['amount_paid']:.2f} ({payment['payment_mode']})
+Paid via {payment['payment_mode']}
 </div>
 
 <div class="footer">
