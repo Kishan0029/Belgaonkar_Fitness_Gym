@@ -94,6 +94,7 @@ const Payments = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
       toast.success('Invoice downloaded');
     } catch (error) {
       console.error('Error downloading invoice:', error);
