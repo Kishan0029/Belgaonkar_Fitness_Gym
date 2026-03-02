@@ -18,6 +18,7 @@ from reportlab.lib.units import inch
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from weasyprint import HTML
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
