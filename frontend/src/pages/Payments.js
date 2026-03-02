@@ -10,8 +10,11 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const Payments = () => {
   const { token, isAdmin } = useAuth();
   const [payments, setPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
   const [members, setMembers] = useState({});
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
 
   useEffect(() => {
     if (isAdmin) {
