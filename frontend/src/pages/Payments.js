@@ -22,6 +22,38 @@ const Payments = () => {
     }
   }, [isAdmin]);
 
+  useEffect(() => {
+    filterPayments();
+  }, [payments, searchQuery, dateFilter]);
+
+  const filterPayments = () => {
+    let filtered = [...payments];
+    
+    if (searchQuery) {
+      filtered = filtered.filter(p => {
+        const member = members[p.member_id];
+        return member && (
+          member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          member.phone_number.includes(searchQuery) ||
+          p.invoice_number.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      });
+    }
+    
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(p => {
+        const paymentDate = new Date(p.payment_date);
+        if (dateFilter === 'today') return paymentDate.toDateString() === now.toDateString();
+        if (dateFilter === 'week') return (now - paymentDate) / (1000 * 60 * 60 * 24) <= 7;
+        if (dateFilter === 'month') return (now - paymentDate) / (1000 * 60 * 60 * 24) <= 30;
+        return true;
+      });
+    }
+    
+    setFilteredPayments(filtered);
+  };
+
   const fetchPayments = async () => {
     try {
       const [paymentsRes, membersRes] = await Promise.all([
