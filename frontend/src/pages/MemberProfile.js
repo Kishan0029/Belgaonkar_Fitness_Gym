@@ -38,7 +38,7 @@ const MemberProfile = () => {
 
   const fetchMemberData = async () => {
     try {
-      const [memberRes, attendanceRes, paymentsRes] = await Promise.all([
+      const [memberRes, attendanceRes, paymentsRes, statsRes] = await Promise.all([
         axios.get(`${API}/members/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -47,14 +47,17 @@ const MemberProfile = () => {
         }),
         axios.get(`${API}/payments/member/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/members/${id}/attendance-stats`, {
+          headers: { Authorization: `Bearer ${token}` }
         })
       ]);
 
       setMember(memberRes.data);
       setAttendance(attendanceRes.data);
       setPayments(paymentsRes.data);
+      setAttendanceStats(statsRes.data);
 
-      // Fetch package details
       const packageRes = await axios.get(`${API}/packages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
