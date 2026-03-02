@@ -955,8 +955,12 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     pdf = buffer.getvalue()
     buffer.close()
     
+    safe_name = "".join(x for x in member['full_name'] if x.isalnum() or x in " -_").strip().replace(" ", "_").replace("__", "_")
+    formatted_date = payment_date.strftime('%Y%m%d')
+    file_name = f"Belgaonkar_Fitness_Invoice_{safe_name}_{formatted_date}.pdf"
+    
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={
-        "Content-Disposition": f"attachment; filename=invoice_{payment['invoice_number']}.pdf"
+        "Content-Disposition": f"attachment; filename={file_name}"
     })
 
 # =============== NOTIFICATIONS ===============
