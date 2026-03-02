@@ -34,6 +34,8 @@ const MemberProfile = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('Cash');
 
+  const { isAdmin } = useAuth();
+
   useEffect(() => {
     fetchMemberData();
   }, [id]);
