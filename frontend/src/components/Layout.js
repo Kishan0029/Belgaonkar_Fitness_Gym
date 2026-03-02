@@ -89,7 +89,7 @@ const Layout = () => {
           <img
             src="https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png"
             alt="Belgaonkar Fitness"
-            className="h-7 object-contain"
+            className="h-9 object-contain"
           />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
