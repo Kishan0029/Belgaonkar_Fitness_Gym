@@ -26,6 +26,7 @@ const MemberProfile = () => {
   const [memberPackage, setMemberPackage] = useState(null);
   const [attendance, setAttendance] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [attendanceStats, setAttendanceStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
