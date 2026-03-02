@@ -779,42 +779,101 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     c = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Header
-    c.setFont("Helvetica-Bold", 24)
+    # Logo and Header
+    c.setFont("Helvetica-Bold", 26)
     c.drawString(1*inch, height - 1*inch, "Belgaonkar Fitness")
     
-    c.setFont("Helvetica", 12)
+    c.setFont("Helvetica", 11)
     c.drawString(1*inch, height - 1.3*inch, "Belgaum, India")
+    c.drawString(1*inch, height - 1.5*inch, "Phone: +91 9876543210")
     
-    # Invoice details
+    # Invoice Number and Payment Date
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(1*inch, height - 2*inch, f"Invoice #{payment['invoice_number']}")
+    c.drawString(1*inch, height - 2.2*inch, f"Invoice #{payment['invoice_number']}")
     
-    c.setFont("Helvetica", 12)
+    c.setFont("Helvetica", 11)
     payment_date = datetime.fromisoformat(payment["payment_date"]) if isinstance(payment["payment_date"], str) else payment["payment_date"]
-    c.drawString(1*inch, height - 2.3*inch, f"Date: {payment_date.strftime('%d %B %Y')}")
+    c.drawString(1*inch, height - 2.5*inch, f"Payment Date: {payment_date.strftime('%d %B %Y')}")
     
-    # Member details
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(1*inch, height - 3*inch, "Member Details:")
+    # Member Details
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(1*inch, height - 3.1*inch, "Member Details:")
     
-    c.setFont("Helvetica", 12)
-    c.drawString(1*inch, height - 3.3*inch, f"Name: {member['full_name']}")
-    c.drawString(1*inch, height - 3.6*inch, f"Phone: {member['phone_number']}")
+    c.setFont("Helvetica", 11)
+    c.drawString(1*inch, height - 3.4*inch, f"Name: {member['full_name']}")
+    c.drawString(1*inch, height - 3.7*inch, f"Phone: {member['phone_number']}")
     
-    # Payment details
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(1*inch, height - 4.5*inch, "Payment Details:")
+    # Membership Details
+    y_pos = height - 4.4*inch
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(1*inch, y_pos, "Membership Details:")
+    y_pos -= 0.3*inch
     
-    c.setFont("Helvetica", 12)
+    c.setFont("Helvetica", 11)
     if package:
-        c.drawString(1*inch, height - 4.8*inch, f"Package: {package['package_name']}")
-    c.drawString(1*inch, height - 5.1*inch, f"Amount Paid: ₹{payment['amount_paid']:.2f}")
-    c.drawString(1*inch, height - 5.4*inch, f"Payment Mode: {payment['payment_mode']}")
+        c.drawString(1*inch, y_pos, f"Package: {package['package_name']} ({package['duration_days']} days)")
+        y_pos -= 0.25*inch
+    
+    # Membership dates
+    membership_start = member.get("membership_start_date")
+    if membership_start:
+        if isinstance(membership_start, str):
+            membership_start = datetime.fromisoformat(membership_start)
+        c.drawString(1*inch, y_pos, f"Membership Start Date: {membership_start.strftime('%d %B %Y')}")
+        y_pos -= 0.25*inch
+    
+    expiry_date = member.get("expiry_date")
+    if expiry_date:
+        if isinstance(expiry_date, str):
+            expiry_date = datetime.fromisoformat(expiry_date)
+        c.drawString(1*inch, y_pos, f"Membership End Date: {expiry_date.strftime('%d %B %Y')}")
+        y_pos -= 0.3*inch
+    
+    # Payment Breakdown
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(1*inch, y_pos, "Payment Breakdown:")
+    y_pos -= 0.3*inch
+    
+    c.setFont("Helvetica", 11)
+    
+    # Package amount
+    package_amount = member.get("total_amount", 0)
+    discount = member.get("discount_amount", 0)
+    pt_price = member.get("pt_price", 0)
+    
+    if package:
+        c.drawString(1*inch, y_pos, f"Package Price: ₹{package['price']:.2f}")
+        y_pos -= 0.25*inch
+    
+    # Discount if any
+    if discount > 0:
+        c.drawString(1*inch, y_pos, f"Discount: -₹{discount:.2f}")
+        y_pos -= 0.25*inch
+        c.drawString(1*inch, y_pos, f"Net Package Amount: ₹{(package_amount - discount):.2f}")
+        y_pos -= 0.25*inch
+    
+    # PT if any
+    pt_plan = member.get("pt_plan")
+    if pt_plan and pt_price > 0:
+        pt_name = "Personal Training - Daily" if pt_plan == "daily" else "Personal Training - Alternate Days"
+        c.drawString(1*inch, y_pos, f"{pt_name}: ₹{pt_price:.2f}")
+        y_pos -= 0.25*inch
+    
+    # Total
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(1*inch, y_pos, f"Total Amount: ₹{package_amount:.2f}")
+    y_pos -= 0.3*inch
+    
+    # Amount paid in this transaction
+    c.setFont("Helvetica", 11)
+    c.drawString(1*inch, y_pos, f"Amount Paid (this transaction): ₹{payment['amount_paid']:.2f}")
+    y_pos -= 0.25*inch
+    c.drawString(1*inch, y_pos, f"Payment Mode: {payment['payment_mode']}")
     
     # Footer
-    c.setFont("Helvetica", 10)
+    c.setFont("Helvetica-Italic", 10)
     c.drawString(1*inch, 1*inch, "Thank you for choosing Belgaonkar Fitness!")
+    c.drawString(1*inch, 0.8*inch, "For any queries, please contact us.")
     
     c.save()
     buffer.seek(0)
