@@ -124,7 +124,38 @@ const Payments = () => {
         <p className="text-text-muted mt-1">All payment transactions</p>
       </div>
 
-      {payments.length === 0 ? (
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by member, phone, invoice..."
+              className="w-full h-12 pl-12 pr-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+          <div className="flex gap-2">
+            {['all', 'today', 'week', 'month'].map(filter => (
+              <button
+                key={filter}
+                onClick={() => setDateFilter(filter)}
+                className={`px-4 h-12 rounded-lg font-medium transition-colors ${
+                  dateFilter === filter
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-white border border-border text-text-muted hover:bg-secondary'
+                }`}
+              >
+                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {filteredPayments.length === 0 ? (
         <div className="bg-white rounded-xl border border-border shadow-sm p-12 text-center">
           <DollarSign className="w-12 h-12 text-text-muted mx-auto mb-4" />
           <p className="text-text-muted">No payments recorded</p>
