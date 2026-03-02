@@ -567,6 +567,8 @@ async def search_members(query: str, current_user: User = Depends(get_current_us
     for member in members:
         if isinstance(member.get("join_date"), str):
             member["join_date"] = datetime.fromisoformat(member["join_date"])
+        if isinstance(member.get("membership_start_date"), str):
+            member["membership_start_date"] = datetime.fromisoformat(member["membership_start_date"])
         if isinstance(member.get("expiry_date"), str):
             member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
         if isinstance(member.get("created_at"), str):
@@ -577,6 +579,21 @@ async def search_members(query: str, current_user: User = Depends(get_current_us
             member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
     
     return members
+
+@api_router.delete("/members/{member_id}")
+async def delete_member(member_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete members")
+    
+    result = await db.members.delete_one({"id": member_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Delete related data
+    await db.attendance.delete_many({"member_id": member_id})
+    await db.payments.delete_many({"member_id": member_id})
+    
+    return {"message": "Member deleted successfully"}
 
 # =============== ATTENDANCE ROUTES ===============
 
