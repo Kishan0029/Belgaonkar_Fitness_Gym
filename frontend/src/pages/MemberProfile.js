@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
+  Save,
   Phone,
   Calendar,
   DollarSign,
@@ -12,7 +13,8 @@ import {
   Edit,
   MessageCircle,
   CreditCard,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
