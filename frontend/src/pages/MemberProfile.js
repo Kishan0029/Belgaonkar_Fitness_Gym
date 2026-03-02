@@ -208,6 +208,16 @@ const MemberProfile = () => {
               <Edit className="w-5 h-5 mr-2" />
               Edit
             </Link>
+            {isAdmin && (
+              <button
+                onClick={handleDelete}
+                data-testid="delete-member-button"
+                className="inline-flex items-center justify-center bg-red-50 border border-red-200 text-status-error hover:bg-red-100 h-12 px-6 rounded-lg font-medium transition-colors"
+              >
+                <Trash2 className="w-5 h-5 mr-2" />
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>
