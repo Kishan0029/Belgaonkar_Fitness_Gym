@@ -268,7 +268,8 @@ const AddMember = () => {
                 onChange={handleChange}
                 required
                 data-testid="package-select"
-                className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none"
+                style={{WebkitAppearance: 'none', MozAppearance: 'none'}}
               >
                 <option value="">Select a package</option>
                 {packages.map((pkg) => (
