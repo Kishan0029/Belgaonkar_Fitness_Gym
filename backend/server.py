@@ -805,111 +805,179 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     
     package = await db.packages.find_one({"id": member["package_id"]}, {"_id": 0})
     
-    # Create PDF
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-    
-    # Logo and Header
-    c.setFont("Helvetica-Bold", 26)
-    c.drawString(1*inch, height - 1*inch, "Belgaonkar Fitness")
-    
-    c.setFont("Helvetica", 11)
-    c.drawString(1*inch, height - 1.3*inch, "Belgaum, India")
-    c.drawString(1*inch, height - 1.5*inch, "Phone: +91 9876543210")
-    
-    # Invoice Number and Payment Date
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(1*inch, height - 2.2*inch, f"Invoice #{payment['invoice_number']}")
-    
-    c.setFont("Helvetica", 11)
+    # Prepare dates
     payment_date = datetime.fromisoformat(payment["payment_date"]) if isinstance(payment["payment_date"], str) else payment["payment_date"]
-    c.drawString(1*inch, height - 2.5*inch, f"Payment Date: {payment_date.strftime('%d %B %Y')}")
+    start_date = datetime.fromisoformat(member.get("membership_start_date", member["join_date"])) if isinstance(member.get("membership_start_date", member["join_date"]), str) else member.get("membership_start_date", member["join_date"])
+    end_date = datetime.fromisoformat(member["expiry_date"]) if isinstance(member["expiry_date"], str) else member["expiry_date"]
     
-    # Member Details
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(1*inch, height - 3.1*inch, "Member Details:")
+    # HTML Template
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Invoice</title>
+<style>
+body {{
+    font-family: 'Inter', Arial, sans-serif;
+    background: #f4f6f8;
+    padding: 30px;
+}}
+
+.invoice-box {{
+    max-width: 800px;
+    margin: auto;
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}}
+
+.header {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 20px;
+}}
+
+.logo img {{
+    height: 60px;
+}}
+
+.title {{
+    text-align: right;
+}}
+
+.title h1 {{
+    margin: 0;
+    color: #111;
+    letter-spacing: 1px;
+}}
+
+.meta {{
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+}}
+
+.section {{
+    margin-top: 30px;
+}}
+
+.section h3 {{
+    margin-bottom: 10px;
+    color: #555;
+    font-size: 14px;
+    text-transform: uppercase;
+}}
+
+.details {{
+    background: #fafafa;
+    padding: 20px;
+    border-radius: 8px;
+}}
+
+table {{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}}
+
+table th {{
+    background: #111;
+    color: white;
+    padding: 12px;
+    text-align: left;
+}}
+
+table td {{
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}}
+
+.total {{
+    text-align: right;
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: bold;
+}}
+
+.footer {{
+    margin-top: 40px;
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+}}
+</style>
+</head>
+
+<body>
+<div class="invoice-box">
+
+<div class="header">
+    <div class="logo">
+        <img src="https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png" />
+    </div>
+    <div class="title">
+        <h1>INVOICE</h1>
+        <p>{payment['invoice_number']}</p>
+    </div>
+</div>
+
+<div class="meta">
+    <div>
+        <strong>Belgaonkar Fitness</strong><br>
+        Phone: +91 9876543210
+    </div>
+    <div>
+        Payment Date:<br>
+        <strong>{payment_date.strftime('%d %B %Y')}</strong>
+    </div>
+</div>
+
+<div class="section">
+<h3>Member Details</h3>
+<div class="details">
+{member['full_name']}<br>
+Phone: {member['phone_number']}
+</div>
+</div>
+
+<div class="section">
+<h3>Membership Information</h3>
+<table>
+<tr>
+<th>Package</th>
+<th>Start Date</th>
+<th>End Date</th>
+<th>Price</th>
+</tr>
+<tr>
+<td>{package['package_name'] if package else 'N/A'}</td>
+<td>{start_date.strftime('%d %B %Y')}</td>
+<td>{end_date.strftime('%d %B %Y')}</td>
+<td>₹{package['price'] if package else 0:.2f}</td>
+</tr>
+</table>
+</div>
+
+<div class="total">
+Amount Paid: ₹{payment['amount_paid']:.2f} ({payment['payment_mode']})
+</div>
+
+<div class="footer">
+Thank you for choosing Belgaonkar Fitness.<br>
+Stay consistent. Stay strong.
+</div>
+
+</div>
+</body>
+</html>"""
     
-    c.setFont("Helvetica", 11)
-    c.drawString(1*inch, height - 3.4*inch, f"Name: {member['full_name']}")
-    c.drawString(1*inch, height - 3.7*inch, f"Phone: {member['phone_number']}")
+    # Generate PDF from HTML
+    pdf = HTML(string=html).write_pdf()
     
-    # Membership Details
-    y_pos = height - 4.4*inch
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(1*inch, y_pos, "Membership Details:")
-    y_pos -= 0.3*inch
-    
-    c.setFont("Helvetica", 11)
-    if package:
-        c.drawString(1*inch, y_pos, f"Package: {package['package_name']} ({package['duration_days']} days)")
-        y_pos -= 0.25*inch
-    
-    # Membership dates
-    membership_start = member.get("membership_start_date")
-    if membership_start:
-        if isinstance(membership_start, str):
-            membership_start = datetime.fromisoformat(membership_start)
-        c.drawString(1*inch, y_pos, f"Membership Start Date: {membership_start.strftime('%d %B %Y')}")
-        y_pos -= 0.25*inch
-    
-    expiry_date = member.get("expiry_date")
-    if expiry_date:
-        if isinstance(expiry_date, str):
-            expiry_date = datetime.fromisoformat(expiry_date)
-        c.drawString(1*inch, y_pos, f"Membership End Date: {expiry_date.strftime('%d %B %Y')}")
-        y_pos -= 0.3*inch
-    
-    # Payment Breakdown
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(1*inch, y_pos, "Payment Breakdown:")
-    y_pos -= 0.3*inch
-    
-    c.setFont("Helvetica", 11)
-    
-    # Package amount
-    package_amount = member.get("total_amount", 0)
-    discount = member.get("discount_amount", 0)
-    pt_price = member.get("pt_price", 0)
-    
-    if package:
-        c.drawString(1*inch, y_pos, f"Package Price: ₹{package['price']:.2f}")
-        y_pos -= 0.25*inch
-    
-    # Discount if any
-    if discount > 0:
-        c.drawString(1*inch, y_pos, f"Discount: -₹{discount:.2f}")
-        y_pos -= 0.25*inch
-        c.drawString(1*inch, y_pos, f"Net Package Amount: ₹{(package_amount - discount):.2f}")
-        y_pos -= 0.25*inch
-    
-    # PT if any
-    pt_plan = member.get("pt_plan")
-    if pt_plan and pt_price > 0:
-        pt_name = "Personal Training - Daily" if pt_plan == "daily" else "Personal Training - Alternate Days"
-        c.drawString(1*inch, y_pos, f"{pt_name}: ₹{pt_price:.2f}")
-        y_pos -= 0.25*inch
-    
-    # Total
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(1*inch, y_pos, f"Total Amount: ₹{package_amount:.2f}")
-    y_pos -= 0.3*inch
-    
-    # Amount paid in this transaction
-    c.setFont("Helvetica", 11)
-    c.drawString(1*inch, y_pos, f"Amount Paid (this transaction): ₹{payment['amount_paid']:.2f}")
-    y_pos -= 0.25*inch
-    c.drawString(1*inch, y_pos, f"Payment Mode: {payment['payment_mode']}")
-    
-    # Footer
-    c.setFont("Helvetica-Oblique", 10)
-    c.drawString(1*inch, 1*inch, "Thank you for choosing Belgaonkar Fitness!")
-    c.drawString(1*inch, 0.8*inch, "For any queries, please contact us.")
-    
-    c.save()
-    buffer.seek(0)
-    
-    return StreamingResponse(buffer, media_type="application/pdf", headers={
+    return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=invoice_{payment['invoice_number']}.pdf"
     })
 
