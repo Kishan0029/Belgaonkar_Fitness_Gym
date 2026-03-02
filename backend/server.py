@@ -840,8 +840,6 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     
     # Get all previous payments
     all_payments = await db.payments.find({"member_id": payment["member_id"]}, {"_id": 0}).sort("payment_date", 1).to_list(100)
-    
-    # Calculate previous paid and current payment
     previous_paid = sum(p["amount_paid"] for p in all_payments if p["id"] != payment_id)
     current_paid = payment["amount_paid"]
     total_paid_so_far = previous_paid + current_paid
@@ -852,7 +850,7 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     start_date = datetime.fromisoformat(member.get("membership_start_date", member["join_date"])) if isinstance(member.get("membership_start_date", member["join_date"]), str) else member.get("membership_start_date", member["join_date"])
     end_date = datetime.fromisoformat(member["expiry_date"]) if isinstance(member["expiry_date"], str) else member["expiry_date"]
     
-    # Payment breakdown rows
+    # Build payment breakdown rows
     breakdown_rows = ""
     if previous_paid > 0:
         breakdown_rows += f"<tr><td>Previous Payments</td><td>₹{previous_paid:.2f}</td></tr>"
@@ -866,177 +864,143 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Invoice</title>
 <style>
-body {{
-    font-family: 'Inter', Arial, sans-serif;
-    background: #f4f6f8;
-    padding: 30px;
+body{{
+  font-family: Arial, sans-serif;
+  background:#e9ecef;
+  padding:40px;
 }}
-
-.invoice-box {{
-    max-width: 800px;
-    margin: auto;
-    background: #ffffff;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+.invoice{{
+  max-width:750px;
+  margin:auto;
+  background:#ffffff;
+  padding:40px;
+  border-radius:10px;
 }}
-
-.header {{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #f0f0f0;
-    padding-bottom: 20px;
+.header{{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }}
-
-.logo img {{
-    height: 60px;
+.logo{{
+  height:60px;
 }}
-
-.title {{
-    text-align: right;
+h1{{
+  margin:0;
+  letter-spacing:2px;
 }}
-
-.title h1 {{
-    margin: 0;
-    color: #111;
-    letter-spacing: 1px;
+hr{{
+  margin:25px 0;
+  border:none;
+  border-top:1px solid #ddd;
 }}
-
-.meta {{
-    margin-top: 25px;
-    display: flex;
-    justify-content: space-between;
+.section-title{{
+  font-weight:bold;
+  font-size:14px;
+  margin-bottom:10px;
+  color:#555;
 }}
-
-.section {{
-    margin-top: 30px;
+.member-box{{
+  background:#f5f5f5;
+  padding:15px;
+  border-radius:6px;
 }}
-
-.section h3 {{
-    margin-bottom: 10px;
-    color: #555;
-    font-size: 14px;
-    text-transform: uppercase;
+table{{
+  width:100%;
+  border-collapse:collapse;
 }}
-
-.details {{
-    background: #fafafa;
-    padding: 20px;
-    border-radius: 8px;
+th{{
+  background:#111;
+  color:#fff;
+  padding:10px;
+  text-align:left;
 }}
-
-table {{
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
+td{{
+  padding:10px;
+  border-bottom:1px solid #ddd;
 }}
-
-table th {{
-    background: #111;
-    color: white;
-    padding: 12px;
-    text-align: left;
+.amount{{
+  text-align:right;
+  font-size:18px;
+  font-weight:bold;
+  margin-top:20px;
 }}
-
-table td {{
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-}}
-
-.total {{
-    text-align: right;
-    margin-top: 20px;
-    font-size: 20px;
-    font-weight: bold;
-}}
-
-.footer {{
-    margin-top: 40px;
-    text-align: center;
-    color: #888;
-    font-size: 13px;
+.footer{{
+  margin-top:40px;
+  text-align:center;
+  font-size:13px;
+  color:#777;
 }}
 </style>
 </head>
 
 <body>
-<div class="invoice-box">
+<div class="invoice">
 
 <div class="header">
-    <div class="logo">
-        <img src="https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png" />
-    </div>
-    <div class="title">
-        <h1>INVOICE</h1>
-        <p>{payment['invoice_number']}</p>
-    </div>
+  <img src="https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png" class="logo">
+  <div style="text-align:right;">
+    <h1>INVOICE</h1>
+    {payment['invoice_number']}<br>
+    Payment Date: <b>{payment_date.strftime('%d %B %Y')}</b>
+  </div>
 </div>
 
-<div class="meta">
-    <div>
-        <strong>Belgaonkar Fitness</strong><br>
-        Phone: +91 9876543210
-    </div>
-    <div>
-        Payment Date:<br>
-        <strong>{payment_date.strftime('%d %B %Y')}</strong>
-    </div>
+<hr>
+
+<b>Belgaonkar Fitness</b><br>
+Phone: +91 9876543210
+
+<div style="margin-top:25px;">
+  <div class="section-title">MEMBER DETAILS</div>
+  <div class="member-box">
+    {member['full_name']}<br>
+    Phone: {member['phone_number']}
+  </div>
 </div>
 
-<div class="section">
-<h3>Member Details</h3>
-<div class="details">
-{member['full_name']}<br>
-Phone: {member['phone_number']}
-</div>
-</div>
-
-<div class="section">
-<h3>Membership Information</h3>
-<table>
-<tr>
-<th>Package</th>
-<th>Start Date</th>
-<th>End Date</th>
-<th>Total Amount</th>
-</tr>
-<tr>
-<td>{package['package_name'] if package else 'N/A'}</td>
-<td>{start_date.strftime('%d %B %Y')}</td>
-<td>{end_date.strftime('%d %B %Y')}</td>
-<td>₹{member['total_amount']:.2f}</td>
-</tr>
-</table>
+<div style="margin-top:30px;">
+  <div class="section-title">MEMBERSHIP INFORMATION</div>
+  <table>
+    <tr>
+      <th>Package</th>
+      <th>Start Date</th>
+      <th>End Date</th>
+      <th>Total Amount</th>
+    </tr>
+    <tr>
+      <td>{package['package_name'] if package else 'N/A'}</td>
+      <td>{start_date.strftime('%d %B %Y')}</td>
+      <td>{end_date.strftime('%d %B %Y')}</td>
+      <td>₹{member['total_amount']:.2f}</td>
+    </tr>
+  </table>
 </div>
 
-<div class="section">
-<h3>Payment Breakdown</h3>
-<table>
-<tr>
-<th>Description</th>
-<th>Amount</th>
-</tr>
-{breakdown_rows}
-</table>
+<div style="margin-top:30px;">
+  <div class="section-title">PAYMENT BREAKDOWN</div>
+  <table>
+    <tr>
+      <th>Description</th>
+      <th>Amount</th>
+    </tr>
+    {breakdown_rows}
+  </table>
 </div>
 
-<div class="total">
-Paid via {payment['payment_mode']}
+<div class="amount">
+  Paid via {payment['payment_mode']}
 </div>
 
 <div class="footer">
-Thank you for choosing Belgaonkar Fitness.<br>
-Stay consistent. Stay strong.
+  Thank you for choosing Belgaonkar Fitness.<br>
+  Stay consistent. Stay strong.
 </div>
 
 </div>
 </body>
 </html>"""
     
-    # Generate PDF from HTML
     pdf = HTML(string=html).write_pdf()
     
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={
