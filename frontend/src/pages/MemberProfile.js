@@ -203,6 +203,12 @@ const MemberProfile = () => {
           <p className="text-status-warning font-medium">Membership Expiring Soon</p>
         </div>
       )}
+      {attendanceStats?.qualifies_for_extension && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5" data-testid="extension-alert">
+          <p className="text-status-info font-medium">Low Attendance Alert</p>
+          <p className="text-sm text-text-main mt-1">{attendanceStats.message}</p>
+        </div>
+      )}
 
       {/* Member Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
