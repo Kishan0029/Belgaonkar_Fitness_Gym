@@ -143,6 +143,21 @@ const MemberProfile = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this member? This will remove all their data including payments and attendance.')) return;
+    
+    try {
+      await axios.delete(`${API}/members/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Member deleted successfully');
+      navigate('/members');
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete member');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
