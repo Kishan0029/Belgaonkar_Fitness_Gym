@@ -483,13 +483,29 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
     
     update_dict = {k: v for k, v in member_data.model_dump(exclude_unset=True).items() if v is not None}
     
-    # If package changed, recalculate expiry
-    if "package_id" in update_dict:
-        package = await db.packages.find_one({"id": update_dict["package_id"]}, {"_id": 0})
+    # If package changed or membership_start_date changed, recalculate expiry
+    if "package_id" in update_dict or "membership_start_date" in update_dict:
+        package_id = update_dict.get("package_id", member["package_id"])
+        package = await db.packages.find_one({"id": package_id}, {"_id": 0})
         if not package:
             raise HTTPException(status_code=404, detail="Package not found")
-        join_date = datetime.fromisoformat(member["join_date"]) if isinstance(member["join_date"], str) else member["join_date"]
-        update_dict["expiry_date"] = (join_date + timedelta(days=package["duration_days"])).isoformat()
+        
+        # Use new membership_start_date if provided, otherwise use existing
+        if "membership_start_date" in update_dict:
+            start_date = update_dict["membership_start_date"]
+        elif isinstance(member.get("membership_start_date"), str):
+            start_date = datetime.fromisoformat(member["membership_start_date"])
+        else:
+            start_date = member.get("membership_start_date", member.get("join_date"))
+            if isinstance(start_date, str):
+                start_date = datetime.fromisoformat(start_date)
+        
+        update_dict["expiry_date"] = (start_date + timedelta(days=package["duration_days"])).isoformat()
+    
+    # Convert datetime fields to ISO format for storage
+    for field in ["membership_start_date"]:
+        if field in update_dict and isinstance(update_dict[field], datetime):
+            update_dict[field] = update_dict[field].isoformat()
     
     if update_dict:
         await db.members.update_one({"id": member_id}, {"$set": update_dict})
@@ -497,6 +513,8 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
     updated_member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if isinstance(updated_member.get("join_date"), str):
         updated_member["join_date"] = datetime.fromisoformat(updated_member["join_date"])
+    if isinstance(updated_member.get("membership_start_date"), str):
+        updated_member["membership_start_date"] = datetime.fromisoformat(updated_member["membership_start_date"])
     if isinstance(updated_member.get("expiry_date"), str):
         updated_member["expiry_date"] = datetime.fromisoformat(updated_member["expiry_date"])
     if isinstance(updated_member.get("created_at"), str):
@@ -505,6 +523,18 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
         updated_member["last_visit_date"] = datetime.fromisoformat(updated_member["last_visit_date"])
     if updated_member.get("date_of_birth") and isinstance(updated_member["date_of_birth"], str):
         updated_member["date_of_birth"] = datetime.fromisoformat(updated_member["date_of_birth"])
+    
+    # Set defaults for new fields if missing
+    if "discount_amount" not in updated_member:
+        updated_member["discount_amount"] = 0.0
+    if "pt_plan" not in updated_member:
+        updated_member["pt_plan"] = None
+    if "pt_price" not in updated_member:
+        updated_member["pt_price"] = 0.0
+    if "extension_days" not in updated_member:
+        updated_member["extension_days"] = 0
+    if "membership_start_date" not in updated_member:
+        updated_member["membership_start_date"] = updated_member["join_date"]
     
     return Member(**updated_member)
 
