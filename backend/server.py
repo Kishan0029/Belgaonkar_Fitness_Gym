@@ -79,11 +79,15 @@ class MemberCreate(BaseModel):
     phone_number: str
     package_id: str
     join_date: datetime
+    membership_start_date: datetime
     payment_status: str = "Pending"  # Paid, Partial, Pending
     total_amount: float
+    discount_amount: float = 0.0
     amount_paid: float = 0.0
     assigned_trainer: Optional[str] = None
     date_of_birth: Optional[datetime] = None
+    pt_plan: Optional[str] = None  # None, alternate_day, daily
+    pt_price: float = 0.0
 
 class MemberUpdate(BaseModel):
     full_name: Optional[str] = None
