@@ -10,18 +10,18 @@ from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
-from passlib.context import CryptContext
+import bcrypt
 import jwt
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from weasyprint import HTML
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(Path(__file__).parent / ".env")
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -29,7 +29,6 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Security
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 SECRET_KEY = os.environ.get("SECRET_KEY", "belgaonkar_fitness_secret_key_2025")
 ALGORITHM = "HS256"
@@ -89,6 +88,7 @@ class MemberCreate(BaseModel):
     date_of_birth: Optional[datetime] = None
     pt_plan: Optional[str] = None  # None, alternate_day, daily
     pt_price: float = 0.0
+    payment_mode: str = "Cash"
 
 class MemberUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -169,10 +169,10 @@ class DashboardStats(BaseModel):
 # =============== AUTH HELPERS ===============
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -394,7 +394,7 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         payment = Payment(
             member_id=member.id,
             amount_paid=member_data.amount_paid,
-            payment_mode="Cash",
+            payment_mode=member_data.payment_mode,
             payment_date=member_data.join_date,
             invoice_number=invoice_number
         )
@@ -850,158 +850,110 @@ async def generate_invoice(payment_id: str, current_user: User = Depends(get_cur
     start_date = datetime.fromisoformat(member.get("membership_start_date", member["join_date"])) if isinstance(member.get("membership_start_date", member["join_date"]), str) else member.get("membership_start_date", member["join_date"])
     end_date = datetime.fromisoformat(member["expiry_date"]) if isinstance(member["expiry_date"], str) else member["expiry_date"]
     
-    # Build payment breakdown rows
-    breakdown_rows = ""
+    # Generate PDF with ReportLab
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    
+    # Header
+    logo_url = "https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png"
+    try:
+        logo = ImageReader(logo_url)
+        c.drawImage(logo, 1 * inch, height - 1.2 * inch, width=0.8 * inch, height=0.8 * inch, preserveAspectRatio=True, mask='auto')
+        c.setFont("Helvetica-Bold", 24)
+        c.drawString(2 * inch, height - 1 * inch, "INVOICE")
+    except Exception as e:
+        c.setFont("Helvetica-Bold", 24)
+        c.drawString(1 * inch, height - 1 * inch, "INVOICE")
+    
+    c.setFont("Helvetica", 10)
+    c.drawRightString(width - 1 * inch, height - 1 * inch, payment['invoice_number'])
+    c.drawRightString(width - 1 * inch, height - 1.2 * inch, f"Payment Date: {payment_date.strftime('%d %B %Y')}")
+    
+    # Line
+    c.line(1 * inch, height - 1.4 * inch, width - 1 * inch, height - 1.4 * inch)
+    
+    # Gym details
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(1 * inch, height - 1.7 * inch, "Belgaonkar Fitness")
+    c.setFont("Helvetica", 10)
+    c.drawString(1 * inch, height - 1.9 * inch, "Phone: +91 9876543210")
+    
+    # Member details
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(1 * inch, height - 2.4 * inch, "MEMBER DETAILS")
+    c.setFont("Helvetica", 10)
+    c.drawString(1 * inch, height - 2.6 * inch, member['full_name'])
+    c.drawString(1 * inch, height - 2.8 * inch, f"Phone: {member['phone_number']}")
+    
+    # Membership info
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(1 * inch, height - 3.3 * inch, "MEMBERSHIP INFORMATION")
+    
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(1 * inch, height - 3.6 * inch, "Package")
+    c.drawString(3 * inch, height - 3.6 * inch, "Start Date")
+    c.drawString(4.5 * inch, height - 3.6 * inch, "End Date")
+    c.drawString(6 * inch, height - 3.6 * inch, "Total Amount")
+    
+    c.line(1 * inch, height - 3.7 * inch, width - 1 * inch, height - 3.7 * inch)
+    
+    c.setFont("Helvetica", 10)
+    c.drawString(1 * inch, height - 3.9 * inch, package['package_name'] if package else 'N/A')
+    c.drawString(3 * inch, height - 3.9 * inch, start_date.strftime('%d %B %Y'))
+    c.drawString(4.5 * inch, height - 3.9 * inch, end_date.strftime('%d %B %Y'))
+    c.drawString(6 * inch, height - 3.9 * inch, f"Rs {member['total_amount']:.2f}")
+    
+    c.line(1 * inch, height - 4.1 * inch, width - 1 * inch, height - 4.1 * inch)
+    
+    # Payment Breakdown
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(1 * inch, height - 4.6 * inch, "PAYMENT BREAKDOWN")
+    
+    c.drawString(1 * inch, height - 4.9 * inch, "Description")
+    c.drawString(6 * inch, height - 4.9 * inch, "Amount")
+    c.line(1 * inch, height - 5.0 * inch, width - 1 * inch, height - 5.0 * inch)
+    
+    c.setFont("Helvetica", 10)
+    y = height - 5.2 * inch
+    
     if previous_paid > 0:
-        breakdown_rows += f"<tr><td>Previous Payments</td><td>₹{previous_paid:.2f}</td></tr>"
-    breakdown_rows += f"<tr><td>Current Payment</td><td>₹{current_paid:.2f}</td></tr>"
-    breakdown_rows += f"<tr style='font-weight:bold;'><td>Total Paid</td><td>₹{total_paid_so_far:.2f}</td></tr>"
+        c.drawString(1 * inch, y, "Previous Payments")
+        c.drawString(6 * inch, y, f"Rs {previous_paid:.2f}")
+        y -= 0.2 * inch
+        
+    c.drawString(1 * inch, y, "Current Payment")
+    c.drawString(6 * inch, y, f"Rs {current_paid:.2f}")
+    y -= 0.2 * inch
+    
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(1 * inch, y, "Total Paid")
+    c.drawString(6 * inch, y, f"Rs {total_paid_so_far:.2f}")
+    y -= 0.2 * inch
+    
     if balance_remaining > 0:
-        breakdown_rows += f"<tr style='color:#dc2626;'><td>Balance Due</td><td>₹{balance_remaining:.2f}</td></tr>"
+        c.setFillColorRGB(0.8, 0, 0)
+        c.drawString(1 * inch, y, "Balance Due")
+        c.drawString(6 * inch, y, f"Rs {balance_remaining:.2f}")
+        c.setFillColorRGB(0, 0, 0)
+        y -= 0.2 * inch
+        
+    c.line(1 * inch, y + 0.1 * inch, width - 1 * inch, y + 0.1 * inch)
     
-    # HTML Template
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body{{
-  font-family: Arial, sans-serif;
-  background:#e9ecef;
-  padding:40px;
-}}
-.invoice{{
-  max-width:750px;
-  margin:auto;
-  background:#ffffff;
-  padding:40px;
-  border-radius:10px;
-}}
-.header{{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}}
-.logo{{
-  height:60px;
-}}
-h1{{
-  margin:0;
-  letter-spacing:2px;
-}}
-hr{{
-  margin:25px 0;
-  border:none;
-  border-top:1px solid #ddd;
-}}
-.section-title{{
-  font-weight:bold;
-  font-size:14px;
-  margin-bottom:10px;
-  color:#555;
-}}
-.member-box{{
-  background:#f5f5f5;
-  padding:15px;
-  border-radius:6px;
-}}
-table{{
-  width:100%;
-  border-collapse:collapse;
-}}
-th{{
-  background:#111;
-  color:#fff;
-  padding:10px;
-  text-align:left;
-}}
-td{{
-  padding:10px;
-  border-bottom:1px solid #ddd;
-}}
-.amount{{
-  text-align:right;
-  font-size:18px;
-  font-weight:bold;
-  margin-top:20px;
-}}
-.footer{{
-  margin-top:40px;
-  text-align:center;
-  font-size:13px;
-  color:#777;
-}}
-</style>
-</head>
-
-<body>
-<div class="invoice">
-
-<div class="header">
-  <img src="https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png" class="logo">
-  <div style="text-align:right;">
-    <h1>INVOICE</h1>
-    {payment['invoice_number']}<br>
-    Payment Date: <b>{payment_date.strftime('%d %B %Y')}</b>
-  </div>
-</div>
-
-<hr>
-
-<b>Belgaonkar Fitness</b><br>
-Phone: +91 9876543210
-
-<div style="margin-top:25px;">
-  <div class="section-title">MEMBER DETAILS</div>
-  <div class="member-box">
-    {member['full_name']}<br>
-    Phone: {member['phone_number']}
-  </div>
-</div>
-
-<div style="margin-top:30px;">
-  <div class="section-title">MEMBERSHIP INFORMATION</div>
-  <table>
-    <tr>
-      <th>Package</th>
-      <th>Start Date</th>
-      <th>End Date</th>
-      <th>Total Amount</th>
-    </tr>
-    <tr>
-      <td>{package['package_name'] if package else 'N/A'}</td>
-      <td>{start_date.strftime('%d %B %Y')}</td>
-      <td>{end_date.strftime('%d %B %Y')}</td>
-      <td>₹{member['total_amount']:.2f}</td>
-    </tr>
-  </table>
-</div>
-
-<div style="margin-top:30px;">
-  <div class="section-title">PAYMENT BREAKDOWN</div>
-  <table>
-    <tr>
-      <th>Description</th>
-      <th>Amount</th>
-    </tr>
-    {breakdown_rows}
-  </table>
-</div>
-
-<div class="amount">
-  Paid via {payment['payment_mode']}
-</div>
-
-<div class="footer">
-  Thank you for choosing Belgaonkar Fitness.<br>
-  Stay consistent. Stay strong.
-</div>
-
-</div>
-</body>
-</html>"""
+    y -= 0.3 * inch
+    c.setFont("Helvetica-Bold", 12)
+    c.drawRightString(width - 1 * inch, y, f"Paid via {payment['payment_mode']}")
     
-    pdf = HTML(string=html).write_pdf()
+    # Footer
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawCentredString(width / 2.0, 1 * inch, "Thank you for choosing Belgaonkar Fitness.")
+    c.drawCentredString(width / 2.0, 0.8 * inch, "Stay consistent. Stay strong.")
+    
+    c.showPage()
+    c.save()
+    
+    pdf = buffer.getvalue()
+    buffer.close()
     
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=invoice_{payment['invoice_number']}.pdf"

@@ -1,0 +1,163 @@
+﻿
+> frontend@0.1.0 start
+> craco start
+
+node.exe : node:internal/modu
+les/cjs/loader:1225
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (node:in  
+  ternal/modules/cjs/loade   
+ r:1225:String) [], Remot    
+eException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  const err = new 
+Error(message);
+              ^
+
+Error: Cannot find module 
+'ajv/dist/compile/codegen'
+Require stack:
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\a
+jv-keywords\dist\definitions\
+typeof.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\a
+jv-keywords\dist\keywords\typ
+eof.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\a
+jv-keywords\dist\keywords\ind
+ex.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\a
+jv-keywords\dist\index.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\s
+chema-utils\dist\validate.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\s
+chema-utils\dist\index.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\t
+erser-webpack-plugin\dist\ind
+ex.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\r
+eact-scripts\config\webpack.c
+onfig.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\@
+craco\craco\dist\lib\cra.js
+- E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\@
+craco\craco\dist\scripts\star
+t.js
+    at 
+Function._resolveFilename (no
+de:internal/modules/cjs/loade
+r:1225:15)
+    at Function._load (node:i
+nternal/modules/cjs/loader:10
+55:27)
+    at 
+TracingChannel.traceSync (nod
+e:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:i
+nternal/modules/cjs/loader:22
+0:24)
+    at Module.require (node:i
+nternal/modules/cjs/loader:13
+11:12)
+    at require (node:internal
+/modules/helpers:136:16)
+    at Object.<anonymous> 
+(E:\Belgaonkar Fitness Gym 
+Web App\Belgaonkar-Fitness-Gy
+m-App\frontend\node_modules\a
+jv-keywords\dist\definitions\
+typeof.js:3:19)
+    at Module._compile (node:
+internal/modules/cjs/loader:1
+554:14)
+    at Object..js (node:inter
+nal/modules/cjs/loader:1706:1
+0)
+    at Module.load (node:inte
+rnal/modules/cjs/loader:1289:
+32) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\ajv-keywords\\dist\\de
+finitions\\typeof.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\ajv-keywords\\dist\\ke
+ywords\\typeof.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\ajv-keywords\\dist\\ke
+ywords\\index.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\ajv-keywords\\dist\\in
+dex.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\schema-utils\\dist\\va
+lidate.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\schema-utils\\dist\\in
+dex.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\terser-webpack-plugin\
+\dist\\index.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\react-scripts\\config\
+\webpack.config.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\@craco\\craco\\dist\\l
+ib\\cra.js',
+    'E:\\Belgaonkar Fitness 
+Gym Web App\\Belgaonkar-Fitne
+ss-Gym-App\\frontend\\node_mo
+dules\\@craco\\craco\\dist\\s
+cripts\\start.js'
+  ]
+}
+
+Node.js v22.14.0

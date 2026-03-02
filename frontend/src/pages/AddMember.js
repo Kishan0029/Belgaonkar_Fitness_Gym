@@ -25,6 +25,7 @@ const AddMember = () => {
     discount_amount: '0',
     amount_paid: '0',
     payment_status: 'Pending',
+    payment_mode: 'Cash',
     assigned_trainer: '',
     date_of_birth: '',
     pt_plan: '',
@@ -137,6 +138,7 @@ const AddMember = () => {
         pt_price: parseFloat(formData.pt_price),
         join_date: new Date(formData.join_date).toISOString(),
         membership_start_date: new Date(formData.membership_start_date).toISOString(),
+        payment_mode: formData.payment_mode,
         date_of_birth: formData.date_of_birth ? new Date(formData.date_of_birth).toISOString() : null,
         pt_plan: formData.pt_plan || null
       };
@@ -268,10 +270,10 @@ const AddMember = () => {
                 onChange={handleChange}
                 required
                 data-testid="package-select"
-                className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none"
-                style={{WebkitAppearance: 'none', MozAppearance: 'none'}}
+                className="w-full h-12 px-4 pr-10 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
                 <option value="">Select a package</option>
+                {packages.length === 0 && <option value="" disabled>No packages available. Please add packages first.</option>}
                 {packages.map((pkg) => (
                   <option key={pkg.id} value={pkg.id}>
                     {pkg.package_name} ({pkg.duration_days} days) - ₹{pkg.price}
@@ -450,6 +452,24 @@ const AddMember = () => {
                 <option value="Pending">Pending</option>
                 <option value="Partial">Partial</option>
                 <option value="Paid">Paid</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="payment_mode" className="block text-sm font-medium text-text-main mb-1.5">
+                Payment Mode
+              </label>
+              <select
+                id="payment_mode"
+                name="payment_mode"
+                value={formData.payment_mode}
+                onChange={handleChange}
+                data-testid="payment-mode-select"
+                className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              >
+                <option value="Cash">Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="Card">Card</option>
               </select>
             </div>
           </div>

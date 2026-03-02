@@ -99,10 +99,7 @@ const Login = () => {
           </form>
         </div>
 
-        <p className="text-center text-sm text-text-muted mt-6">
-          Demo Admin: admin@belgaonkar.com / Password: admin123<br />
-          Demo Staff: staff@belgaonkar.com / Password: staff123
-        </p>
+
       </div>
     </div>
   );
