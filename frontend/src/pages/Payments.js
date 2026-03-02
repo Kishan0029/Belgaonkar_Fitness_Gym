@@ -176,7 +176,7 @@ const Payments = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {payments.map((payment) => {
+                {filteredPayments.map((payment) => {
                   const member = members[payment.member_id];
                   return (
                     <tr key={payment.id} className="hover:bg-background-subtle transition-colors">
