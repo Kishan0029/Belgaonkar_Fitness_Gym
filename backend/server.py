@@ -394,6 +394,8 @@ async def get_members(current_user: User = Depends(get_current_user)):
     for member in members:
         if isinstance(member.get("join_date"), str):
             member["join_date"] = datetime.fromisoformat(member["join_date"])
+        if isinstance(member.get("membership_start_date"), str):
+            member["membership_start_date"] = datetime.fromisoformat(member["membership_start_date"])
         if isinstance(member.get("expiry_date"), str):
             member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
         if isinstance(member.get("created_at"), str):
@@ -402,6 +404,17 @@ async def get_members(current_user: User = Depends(get_current_user)):
             member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
         if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
             member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
+        # Set defaults for new fields if missing
+        if "discount_amount" not in member:
+            member["discount_amount"] = 0.0
+        if "pt_plan" not in member:
+            member["pt_plan"] = None
+        if "pt_price" not in member:
+            member["pt_price"] = 0.0
+        if "extension_days" not in member:
+            member["extension_days"] = 0
+        if "membership_start_date" not in member:
+            member["membership_start_date"] = member["join_date"]
     return members
 
 @api_router.get("/members/{member_id}", response_model=Member)
