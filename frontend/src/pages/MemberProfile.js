@@ -286,8 +286,16 @@ const MemberProfile = () => {
 
       {/* WhatsApp Actions */}
       <div className="bg-white rounded-xl border border-border shadow-sm p-5">
-        <h2 className="text-xl font-semibold text-text-main mb-4 font-heading">WhatsApp Actions</h2>
+        <h2 className="text-xl font-semibold text-text-main mb-4 font-heading">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <a
+            href={`tel:${member.phone_number}`}
+            data-testid="call-now-button"
+            className="flex items-center justify-center bg-blue-50 text-status-info border border-blue-200 hover:bg-blue-100 h-12 px-4 rounded-lg font-medium transition-colors"
+          >
+            <Phone className="w-4 h-4 mr-2" />
+            Call Now
+          </a>
           {isExpiringSoon && (
             <a
               href={generateWhatsAppLink('expiry')}
@@ -322,16 +330,6 @@ const MemberProfile = () => {
               Payment Reminder
             </a>
           )}
-          <a
-            href={generateWhatsAppLink('birthday')}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="whatsapp-birthday"
-            className="flex items-center justify-center bg-green-50 text-status-success border border-green-200 hover:bg-green-100 h-12 px-4 rounded-lg font-medium transition-colors"
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Birthday Wish
-          </a>
         </div>
       </div>
 
