@@ -148,6 +148,14 @@ const Reports = () => {
           <MessageCircle className="w-4 h-4 mr-2" />
           Send WhatsApp
         </a>
+        <a
+          href={`tel:${member.phone_number}`}
+          data-testid={`call-${member.id}`}
+          className="flex items-center justify-center w-full bg-blue-50 text-status-info border border-blue-200 hover:bg-blue-100 h-11 px-4 rounded-lg font-medium transition-colors mt-2"
+        >
+          <Phone className="w-4 h-4 mr-2" />
+          Call Now
+        </a>
       </div>
     );
   };
