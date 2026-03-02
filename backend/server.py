@@ -93,11 +93,15 @@ class MemberUpdate(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     package_id: Optional[str] = None
+    membership_start_date: Optional[datetime] = None
     payment_status: Optional[str] = None
     total_amount: Optional[float] = None
+    discount_amount: Optional[float] = None
     amount_paid: Optional[float] = None
     assigned_trainer: Optional[str] = None
     date_of_birth: Optional[datetime] = None
+    pt_plan: Optional[str] = None
+    pt_price: Optional[float] = None
 
 class Member(BaseModel):
     model_config = ConfigDict(extra="ignore")
