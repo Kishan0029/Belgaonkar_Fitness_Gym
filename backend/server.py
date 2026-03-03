@@ -36,6 +36,12 @@ ACCESS_TOKEN_EXPIRE_DAYS = 30
 
 # Create the main app without a prefix
 app = FastAPI()
+
+@app.get("/health")
+async def health_check():
+    """Lightweight health check endpoint for UptimeRobot"""
+    return {"status": "ok"}
+
 api_router = APIRouter(prefix="/api")
 
 # Scheduler for background jobs
