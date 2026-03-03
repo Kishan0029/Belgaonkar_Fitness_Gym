@@ -105,7 +105,7 @@ const Login = () => {
           <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
             <img src={nextverseLogo} alt="Nextverse" className="w-48 h-auto object-contain" />
           </a>
-          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline font-medium">
+          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="text-sm text-text-muted hover:underline font-medium">
             gonextverse.in
           </a>
         </div>
