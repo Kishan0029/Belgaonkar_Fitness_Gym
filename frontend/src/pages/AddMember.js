@@ -211,32 +211,28 @@ const AddMember = () => {
     }
   };
 
-  const handleShareWhatsApp = async () => {
+  const handleShareWhatsApp = () => {
     if (!successData) return;
     try {
-      toast('Generating invoice for WhatsApp sharing...', { duration: 2000 });
-      const blob = await downloadInvoice(successData.payment_id, true);
-      const file = new File([blob], `Invoice_${successData.member.full_name}.pdf`, { type: 'application/pdf' });
-      // Gym name fallback: standard phrasing
-      const message = `Hi ${successData.member.full_name},\n\nHere is your membership invoice from Burnout Fitness.\n\nThank you for training with us 💪`;
+      const invoiceUrl = `${API}/invoice/${successData.payment_id}`;
+      const amountPaid = successData.member.amount_paid;
 
-      const phone = successData.member.phone_number.replace(/[^0-9]/g, '');
-      const phoneWithCode = phone.startsWith('91') ? phone : `91${phone}`;
-      const fallbackLink = `https://wa.me/${phoneWithCode}?text=${encodeURIComponent(message)}`;
+      const message = `Hi ${successData.member.full_name},\n\nWe have received your payment of ₹${amountPaid}.\n\nDownload your invoice here:\n${invoiceUrl}\n\nThank you for training with Burnout Fitness 💪`;
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: 'Membership Invoice',
-          text: message,
-          files: [file]
-        });
-      } else {
-        toast.error('Direct PDF attachment not supported by this browser. Falling back to simple WhatsApp link.');
-        window.open(fallbackLink, '_blank');
+      let phone = successData.member.phone_number.replace(/[^0-9]/g, '');
+      if (!phone.startsWith('91') && phone.length === 10) {
+        phone = `91${phone}`;
+      } else if (!phone.startsWith('91')) {
+        phone = `91${phone}`; // Fallback to ensure 91 prefix
       }
+
+      const encodedMessage = encodeURIComponent(message);
+      const waLink = `https://wa.me/${phone}?text=${encodedMessage}`;
+
+      window.open(waLink, '_blank');
     } catch (error) {
       console.error("WhatsApp share error", error);
-      toast.error('Failed to share via WhatsApp.');
+      toast.error('Failed to open WhatsApp.');
     }
   };
 

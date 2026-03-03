@@ -423,7 +423,7 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
 
 @api_router.get("/members", response_model=List[Member])
 async def get_members(current_user: User = Depends(get_current_user)):
-    members = await db.members.find({}, {"_id": 0}).to_list(10000)
+    members = await db.members.find({}, {"_id": 0}).sort([("created_at", -1)]).to_list(10000)
     for member in members:
         if isinstance(member.get("join_date"), str):
             member["join_date"] = datetime.fromisoformat(member["join_date"])
@@ -857,7 +857,7 @@ async def get_birthday_members(current_user: User = Depends(get_current_user)):
 # =============== INVOICE PDF GENERATION ===============
 
 @api_router.get("/invoice/{payment_id}")
-async def generate_invoice(payment_id: str, current_user: User = Depends(get_current_user)):
+async def generate_invoice(payment_id: str):
     payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
