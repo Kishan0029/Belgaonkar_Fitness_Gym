@@ -19,6 +19,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const Dashboard = () => {
   const { token } = useAuth();
   const [stats, setStats] = useState(null);
+  const [financialSummary, setFinancialSummary] = useState(null);
   const [birthdayMembers, setBirthdayMembers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,16 +29,20 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsRes, birthdayRes] = await Promise.all([
+      const [statsRes, birthdayRes, financeRes] = await Promise.all([
         axios.get(`${API}/dashboard/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get(`${API}/dashboard/birthday-today`, {
           headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/financial-summary`, {
+          headers: { Authorization: `Bearer ${token}` }
         })
       ]);
       setStats(statsRes.data);
       setBirthdayMembers(birthdayRes.data);
+      setFinancialSummary(financeRes.data);
     } catch (error) {
       console.error('Error fetching dashboard:', error);
       toast.error('Failed to load dashboard data');
@@ -99,6 +104,30 @@ const Dashboard = () => {
     }
   ];
 
+  const financeCards = [
+    {
+      title: 'Monthly Revenue',
+      value: `₹${financialSummary?.monthly_revenue?.toFixed(2) || '0.00'}`,
+      icon: DollarSign,
+      color: 'bg-green-50 text-status-success',
+      testId: 'stat-monthly-revenue'
+    },
+    {
+      title: 'Monthly Expenses',
+      value: `₹${financialSummary?.monthly_expenses?.toFixed(2) || '0.00'}`,
+      icon: AlertCircle,
+      color: 'bg-red-50 text-status-error',
+      testId: 'stat-monthly-expenses'
+    },
+    {
+      title: 'Monthly Profit',
+      value: `₹${financialSummary?.monthly_profit?.toFixed(2) || '0.00'}`,
+      icon: DollarSign,
+      color: 'bg-blue-50 text-status-info',
+      testId: 'stat-monthly-profit'
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -154,6 +183,30 @@ const Dashboard = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Financial Summary */}
+      <div>
+        <h2 className="text-xl font-bold text-text-main font-heading mb-4">Financial Summary (This Month)</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {financeCards.map((stat) => (
+            <div
+              key={stat.title}
+              data-testid={stat.testId}
+              className="bg-white rounded-xl border border-border shadow-sm p-5 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-text-muted mb-2">{stat.title}</p>
+                  <p className="text-2xl md:text-3xl font-bold text-text-main">{stat.value}</p>
+                </div>
+                <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center`}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Quick Actions */}

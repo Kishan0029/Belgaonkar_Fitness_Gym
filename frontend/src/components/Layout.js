@@ -9,7 +9,8 @@ import {
   FileText,
   LogOut,
   Menu,
-  X
+  X,
+  Receipt
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -25,6 +26,7 @@ const Layout = () => {
     { name: 'Packages', href: '/packages', icon: Package },
     { name: 'Attendance', href: '/attendance', icon: UserCheck },
     { name: 'Payments', href: '/payments', icon: DollarSign },
+    { name: 'Expenses', href: '/expenses', icon: Receipt },
     { name: 'Reports', href: '/reports', icon: FileText }
   ];
 
@@ -47,18 +49,17 @@ const Layout = () => {
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href || 
-                              (item.href !== '/' && location.pathname.startsWith(item.href));
+              const isActive = location.pathname === item.href ||
+                (item.href !== '/' && location.pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.name}
                   to={item.href}
                   data-testid={`nav-${item.name.toLowerCase()}`}
-                  className={`flex items-center px-4 h-12 rounded-lg font-medium transition-colors ${
-                    isActive
+                  className={`flex items-center px-4 h-12 rounded-lg font-medium transition-colors ${isActive
                       ? 'bg-primary text-primary-foreground'
                       : 'text-text-muted hover:bg-secondary hover:text-text-main'
-                  }`}
+                    }`}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
                   {item.name}
@@ -106,18 +107,17 @@ const Layout = () => {
             <nav className="px-4 py-4 space-y-1">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href ||
-                                (item.href !== '/' && location.pathname.startsWith(item.href));
+                  (item.href !== '/' && location.pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     data-testid={`mobile-nav-${item.name.toLowerCase()}`}
-                    className={`flex items-center px-4 h-12 rounded-lg font-medium transition-colors ${
-                      isActive
+                    className={`flex items-center px-4 h-12 rounded-lg font-medium transition-colors ${isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-text-muted hover:bg-secondary hover:text-text-main'
-                    }`}
+                      }`}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
                     {item.name}
