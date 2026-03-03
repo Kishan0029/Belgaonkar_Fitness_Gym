@@ -36,7 +36,7 @@ const Login = () => {
           <img
             src="https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png"
             alt="Belgaonkar Fitness"
-            className="h-28 mx-auto mb-6 object-contain"
+            className="h-36 mx-auto mb-6 object-contain"
           />
           <h1 className="text-3xl font-bold text-text-main font-heading mb-2">Welcome Back</h1>
           <p className="text-text-muted">Sign in to manage your gym</p>
