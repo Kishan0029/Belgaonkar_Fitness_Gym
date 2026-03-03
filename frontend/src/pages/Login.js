@@ -102,7 +102,7 @@ const Login = () => {
 
         <div className="mt-8 pt-6 border-t border-border flex flex-col items-center justify-center">
           <p className="text-[13px] text-[#525252] font-medium tracking-wide">Engineered by Nextverse</p>
-          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity -my-2 z-10">
+          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
             <img src={nextverseLogo} alt="Nextverse" className="w-[136px] h-auto object-contain grayscale brightness-0 opacity-70" />
           </a>
           <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="text-xs text-[#737373] hover:text-[#333333] transition-colors font-medium">
