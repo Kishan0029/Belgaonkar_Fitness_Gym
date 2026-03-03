@@ -1,0 +1,48 @@
+name: MongoDB Atlas Backup
+
+on:
+  schedule:
+    - cron: '30 2 * * *'   # Runs daily at 02:30 UTC
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MongoDB Database Tools
+        run: |
+          wget -q https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
+          tar -xzf mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
+          sudo cp mongodb-database-tools-ubuntu2204-x86_64-100.9.4/bin/mongodump /usr/local/bin/
+
+      - name: Set backup date variable
+        id: date
+        run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Create backup directory
+        run: mkdir -p backup/${{ steps.date.outputs.DATE }}
+
+      - name: Run mongodump
+        run: |
+          mongodump \
+            --uri="$MONGODB_URI" \
+            --out=backup/${{ steps.date.outputs.DATE }}
+
+      - name: Compress backup
+        run: |
+          cd backup
+          zip -r gym_backup_${{ steps.date.outputs.DATE }}.zip ${{ steps.date.outputs.DATE }}
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gym-backup-${{ steps.date.outputs.DATE }}
+          path: backup/gym_backup_${{ steps.date.outputs.DATE }}.zip
+          retention-days: 7
