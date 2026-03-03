@@ -110,6 +110,13 @@ class MemberUpdate(BaseModel):
     pt_plan: Optional[str] = None
     pt_price: Optional[float] = None
 
+class MemberRenew(BaseModel):
+    package_id: str
+    duration_days: int
+    total_amount: float
+    amount_paid: float
+    payment_mode: str
+
 class Member(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -129,6 +136,7 @@ class Member(BaseModel):
     pt_price: float
     last_visit_date: Optional[datetime] = None
     extension_days: int = 0
+    membership_history: List[dict] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AttendanceCreate(BaseModel):
@@ -362,9 +370,6 @@ async def create_package(package_data: PackageCreate, current_user: User = Depen
 @api_router.get("/packages", response_model=List[Package])
 async def get_packages(current_user: User = Depends(get_current_user)):
     packages = await db.packages.find({}, {"_id": 0}).to_list(1000)
-    for pkg in packages:
-        if isinstance(pkg["created_at"], str):
-            pkg["created_at"] = datetime.fromisoformat(pkg["created_at"])
     return packages
 
 @api_router.delete("/packages/{package_id}")
@@ -452,18 +457,6 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
 async def get_members(current_user: User = Depends(get_current_user)):
     members = await db.members.find({}, {"_id": 0}).sort([("created_at", -1)]).to_list(10000)
     for member in members:
-        if isinstance(member.get("join_date"), str):
-            member["join_date"] = datetime.fromisoformat(member["join_date"])
-        if isinstance(member.get("membership_start_date"), str):
-            member["membership_start_date"] = datetime.fromisoformat(member["membership_start_date"])
-        if isinstance(member.get("expiry_date"), str):
-            member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
-        if isinstance(member.get("created_at"), str):
-            member["created_at"] = datetime.fromisoformat(member["created_at"])
-        if member.get("last_visit_date") and isinstance(member["last_visit_date"], str):
-            member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
-        if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
-            member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
         # Set defaults for new fields if missing
         if "discount_amount" not in member:
             member["discount_amount"] = 0.0
@@ -482,19 +475,6 @@ async def get_member(member_id: str, current_user: User = Depends(get_current_us
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
-    
-    if isinstance(member.get("join_date"), str):
-        member["join_date"] = datetime.fromisoformat(member["join_date"])
-    if isinstance(member.get("membership_start_date"), str):
-        member["membership_start_date"] = datetime.fromisoformat(member["membership_start_date"])
-    if isinstance(member.get("expiry_date"), str):
-        member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
-    if isinstance(member.get("created_at"), str):
-        member["created_at"] = datetime.fromisoformat(member["created_at"])
-    if member.get("last_visit_date") and isinstance(member["last_visit_date"], str):
-        member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
-    if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
-        member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
     
     # Set defaults for new fields if missing
     if "discount_amount" not in member:
@@ -553,13 +533,12 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
         # Use new membership_start_date if provided, otherwise use existing
         if "membership_start_date" in update_dict:
             start_date = update_dict["membership_start_date"]
-        elif isinstance(member.get("membership_start_date"), str):
-            start_date = datetime.fromisoformat(member["membership_start_date"])
         else:
             start_date = member.get("membership_start_date", member.get("join_date"))
-            if isinstance(start_date, str):
-                start_date = datetime.fromisoformat(start_date)
         
+        if isinstance(start_date, str):
+            start_date = datetime.fromisoformat(start_date)
+            
         update_dict["expiry_date"] = (start_date + timedelta(days=package["duration_days"])).isoformat()
     
     # Dynamically compute total paid
@@ -584,18 +563,6 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
         await db.members.update_one({"id": member_id}, {"$set": update_dict})
     
     updated_member = await db.members.find_one({"id": member_id}, {"_id": 0})
-    if isinstance(updated_member.get("join_date"), str):
-        updated_member["join_date"] = datetime.fromisoformat(updated_member["join_date"])
-    if isinstance(updated_member.get("membership_start_date"), str):
-        updated_member["membership_start_date"] = datetime.fromisoformat(updated_member["membership_start_date"])
-    if isinstance(updated_member.get("expiry_date"), str):
-        updated_member["expiry_date"] = datetime.fromisoformat(updated_member["expiry_date"])
-    if isinstance(updated_member.get("created_at"), str):
-        updated_member["created_at"] = datetime.fromisoformat(updated_member["created_at"])
-    if updated_member.get("last_visit_date") and isinstance(updated_member["last_visit_date"], str):
-        updated_member["last_visit_date"] = datetime.fromisoformat(updated_member["last_visit_date"])
-    if updated_member.get("date_of_birth") and isinstance(updated_member["date_of_birth"], str):
-        updated_member["date_of_birth"] = datetime.fromisoformat(updated_member["date_of_birth"])
     
     # Set defaults for new fields if missing
     if "discount_amount" not in updated_member:
@@ -620,20 +587,6 @@ async def search_members(query: str, current_user: User = Depends(get_current_us
         ]
     }, {"_id": 0}).to_list(100)
     
-    for member in members:
-        if isinstance(member.get("join_date"), str):
-            member["join_date"] = datetime.fromisoformat(member["join_date"])
-        if isinstance(member.get("membership_start_date"), str):
-            member["membership_start_date"] = datetime.fromisoformat(member["membership_start_date"])
-        if isinstance(member.get("expiry_date"), str):
-            member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
-        if isinstance(member.get("created_at"), str):
-            member["created_at"] = datetime.fromisoformat(member["created_at"])
-        if member.get("last_visit_date") and isinstance(member["last_visit_date"], str):
-            member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
-        if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
-            member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
-    
     return members
 
 @api_router.delete("/members/{member_id}")
@@ -650,6 +603,96 @@ async def delete_member(member_id: str, current_user: User = Depends(get_current
     await db.payments.delete_many({"member_id": member_id})
     
     return {"message": "Member deleted successfully"}
+
+@api_router.post("/members/{member_id}/renew")
+async def renew_member(member_id: str, renewal: MemberRenew, current_user: User = Depends(get_current_user)):
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+        
+    current_total = member.get("total_amount", 0.0)
+    current_paid = member.get("amount_paid", 0.0)
+    
+    if current_total > current_paid:
+        raise HTTPException(status_code=400, detail="Clear pending dues before renewal.")
+    
+    # Store old cycle in history
+    history = member.get("membership_history", [])
+    if history is None:
+        history = []
+        
+    old_package = await db.packages.find_one({"id": member.get("package_id")}, {"_id": 0})
+    old_package_name = old_package["package_name"] if old_package else "Unknown"
+    old_duration_days = old_package["duration_days"] if old_package else 0
+
+    old_cycle = {
+        "start_date": member.get("membership_start_date", member.get("join_date")),
+        "expiry_date": member.get("expiry_date"),
+        "package_name": old_package_name,
+        "duration_days": old_duration_days,
+        "total_amount": current_total,
+        "amount_paid": current_paid,
+        "closed_at": datetime.now(timezone.utc).isoformat()
+    }
+    history.append(old_cycle)
+    
+    now_utc = datetime.now(timezone.utc)
+    old_expiry_str = member.get("expiry_date")
+    old_expiry = datetime.fromisoformat(old_expiry_str) if isinstance(old_expiry_str, str) else old_expiry_str
+    
+    if old_expiry.tzinfo is None:
+        old_expiry = old_expiry.replace(tzinfo=timezone.utc)
+        
+    if now_utc <= old_expiry:
+        new_start = old_expiry
+    else:
+        new_start = now_utc
+        
+    new_expiry = new_start + timedelta(days=renewal.duration_days)
+    
+    # Get new package ID
+    new_package = await db.packages.find_one({"id": renewal.package_id}, {"_id": 0})
+    new_package_id = new_package["id"] if new_package else member.get("package_id")
+    
+    update_data = {
+        "membership_history": history,
+        "join_date": new_start.isoformat(),
+        "membership_start_date": new_start.isoformat(),
+        "package_id": new_package_id,
+        "expiry_date": new_expiry.isoformat(),
+        "total_amount": renewal.total_amount,
+    }
+    
+    await db.members.update_one({"id": member_id}, {"$set": update_data})
+    
+    # Create new payment record
+    invoice_number = f"INV-{now_utc.strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+    payment_id = str(uuid.uuid4())
+    
+    new_payment = {
+        "id": payment_id,
+        "member_id": member_id,
+        "amount_paid": renewal.amount_paid,
+        "payment_mode": renewal.payment_mode,
+        "payment_date": now_utc.isoformat(),
+        "invoice_number": invoice_number,
+        "created_at": now_utc.isoformat()
+    }
+    await db.payments.insert_one(new_payment)
+    
+    # Derive payment_status and amount_paid dynamically like in update_member
+    payment_records = await db.payments.find({"member_id": member_id}, {"_id": 0}).to_list(1000)
+    derived_total_paid = sum(p["amount_paid"] for p in payment_records)
+    payment_status = "Paid" if derived_total_paid >= renewal.total_amount else "Partial"
+    
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {"amount_paid": derived_total_paid, "payment_status": payment_status}}
+    )
+    
+    updated_member = await db.members.find_one({"id": member_id}, {"_id": 0})
+        
+    return {"member": updated_member, "invoice_id": payment_id}
 
 # =============== ATTENDANCE ROUTES ===============
 
@@ -682,9 +725,6 @@ async def mark_attendance(attendance_data: AttendanceCreate, current_user: User 
 @api_router.get("/attendance/member/{member_id}")
 async def get_member_attendance(member_id: str, current_user: User = Depends(get_current_user)):
     attendance = await db.attendance.find({"member_id": member_id}, {"_id": 0}).sort("checkin_time", -1).to_list(1000)
-    for record in attendance:
-        if isinstance(record.get("checkin_time"), str):
-            record["checkin_time"] = datetime.fromisoformat(record["checkin_time"])
     return attendance
 
 # =============== PAYMENT ROUTES ===============
@@ -725,11 +765,6 @@ async def record_payment(payment_data: PaymentCreate, current_user: User = Depen
 @api_router.get("/payments/member/{member_id}")
 async def get_member_payments(member_id: str, current_user: User = Depends(get_current_user)):
     payments = await db.payments.find({"member_id": member_id}, {"_id": 0}).sort([("payment_date", -1), ("created_at", -1)]).to_list(1000)
-    for payment in payments:
-        if isinstance(payment.get("payment_date"), str):
-            payment["payment_date"] = datetime.fromisoformat(payment["payment_date"])
-        if isinstance(payment.get("created_at"), str):
-            payment["created_at"] = datetime.fromisoformat(payment["created_at"])
     return payments
 
 @api_router.get("/payments")
@@ -738,11 +773,6 @@ async def get_all_payments(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only admins can view all payments")
     
     payments = await db.payments.find({}, {"_id": 0}).sort([("payment_date", -1), ("created_at", -1)]).to_list(10000)
-    for payment in payments:
-        if isinstance(payment.get("payment_date"), str):
-            payment["payment_date"] = datetime.fromisoformat(payment["payment_date"])
-        if isinstance(payment.get("created_at"), str):
-            payment["created_at"] = datetime.fromisoformat(payment["created_at"])
     return payments
 
 # =============== DASHBOARD ROUTES ===============
@@ -803,19 +833,6 @@ async def get_expiring_members(current_user: User = Depends(get_current_user)):
             "$lte": five_days.isoformat()
         }
     }, {"_id": 0}).to_list(1000)
-    
-    for member in members:
-        if isinstance(member.get("join_date"), str):
-            member["join_date"] = datetime.fromisoformat(member["join_date"])
-        if isinstance(member.get("expiry_date"), str):
-            member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
-        if isinstance(member.get("created_at"), str):
-            member["created_at"] = datetime.fromisoformat(member["created_at"])
-        if member.get("last_visit_date") and isinstance(member["last_visit_date"], str):
-            member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
-        if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
-            member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
-    
     return members
 
 @api_router.get("/dashboard/inactive-members")
@@ -825,38 +842,12 @@ async def get_inactive_members(current_user: User = Depends(get_current_user)):
     members = await db.members.find({
         "last_visit_date": {"$lt": seven_days_ago.isoformat()}
     }, {"_id": 0}).to_list(1000)
-    
-    for member in members:
-        if isinstance(member.get("join_date"), str):
-            member["join_date"] = datetime.fromisoformat(member["join_date"])
-        if isinstance(member.get("expiry_date"), str):
-            member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
-        if isinstance(member.get("created_at"), str):
-            member["created_at"] = datetime.fromisoformat(member["created_at"])
-        if member.get("last_visit_date") and isinstance(member["last_visit_date"], str):
-            member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
-        if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
-            member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
-    
     return members
 
 @api_router.get("/dashboard/pending-payments")
 async def get_pending_payments(current_user: User = Depends(get_current_user)):
     members = await db.members.find({}, {"_id": 0}).to_list(10000)
     pending = [m for m in members if m["amount_paid"] < m["total_amount"]]
-    
-    for member in pending:
-        if isinstance(member.get("join_date"), str):
-            member["join_date"] = datetime.fromisoformat(member["join_date"])
-        if isinstance(member.get("expiry_date"), str):
-            member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
-        if isinstance(member.get("created_at"), str):
-            member["created_at"] = datetime.fromisoformat(member["created_at"])
-        if member.get("last_visit_date") and isinstance(member["last_visit_date"], str):
-            member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
-        if member.get("date_of_birth") and isinstance(member["date_of_birth"], str):
-            member["date_of_birth"] = datetime.fromisoformat(member["date_of_birth"])
-    
     return pending
 
 @api_router.get("/dashboard/birthday-today")
@@ -869,14 +860,6 @@ async def get_birthday_members(current_user: User = Depends(get_current_user)):
         if member.get("date_of_birth"):
             dob = datetime.fromisoformat(member["date_of_birth"]) if isinstance(member["date_of_birth"], str) else member["date_of_birth"]
             if dob.month == today.month and dob.day == today.day:
-                if isinstance(member.get("join_date"), str):
-                    member["join_date"] = datetime.fromisoformat(member["join_date"])
-                if isinstance(member.get("expiry_date"), str):
-                    member["expiry_date"] = datetime.fromisoformat(member["expiry_date"])
-                if isinstance(member.get("created_at"), str):
-                    member["created_at"] = datetime.fromisoformat(member["created_at"])
-                if member.get("last_visit_date") and isinstance(member["last_visit_date"], str):
-                    member["last_visit_date"] = datetime.fromisoformat(member["last_visit_date"])
                 birthday_members.append(member)
     
     return birthday_members
@@ -1059,13 +1042,6 @@ async def get_expenses(start_date: Optional[str] = None, end_date: Optional[str]
         query["category"] = category
         
     expenses = await db.expenses.find(query, {"_id": 0}).sort([("expense_date", -1), ("created_at", -1)]).to_list(10000)
-    for exp in expenses:
-        if isinstance(exp.get("expense_date"), str):
-            exp["expense_date"] = datetime.fromisoformat(exp["expense_date"])
-        if isinstance(exp.get("created_at"), str):
-            exp["created_at"] = datetime.fromisoformat(exp["created_at"])
-        if exp.get("cancelled_at") and isinstance(exp["cancelled_at"], str):
-            exp["cancelled_at"] = datetime.fromisoformat(exp["cancelled_at"])
     return expenses
 
 @api_router.patch("/expenses/{expense_id}", response_model=Expense)
@@ -1090,12 +1066,6 @@ async def update_expense(expense_id: str, expense_data: ExpenseUpdate, current_u
         await db.expenses.update_one({"id": expense_id}, {"$set": update_dict})
         
     updated_expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
-    if isinstance(updated_expense.get("expense_date"), str):
-        updated_expense["expense_date"] = datetime.fromisoformat(updated_expense["expense_date"])
-    if isinstance(updated_expense.get("created_at"), str):
-        updated_expense["created_at"] = datetime.fromisoformat(updated_expense["created_at"])
-    if updated_expense.get("cancelled_at") and isinstance(updated_expense["cancelled_at"], str):
-        updated_expense["cancelled_at"] = datetime.fromisoformat(updated_expense["cancelled_at"])
         
     return Expense(**updated_expense)
 
@@ -1113,12 +1083,6 @@ async def cancel_expense(expense_id: str, current_user: User = Depends(get_curre
     await db.expenses.update_one({"id": expense_id}, {"$set": update_dict})
     
     updated_expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
-    if isinstance(updated_expense.get("expense_date"), str):
-        updated_expense["expense_date"] = datetime.fromisoformat(updated_expense["expense_date"])
-    if isinstance(updated_expense.get("created_at"), str):
-        updated_expense["created_at"] = datetime.fromisoformat(updated_expense["created_at"])
-    if updated_expense.get("cancelled_at") and isinstance(updated_expense["cancelled_at"], str):
-        updated_expense["cancelled_at"] = datetime.fromisoformat(updated_expense["cancelled_at"])
         
     return Expense(**updated_expense)
 
@@ -1177,9 +1141,6 @@ async def get_financial_summary(month: Optional[str] = None, current_user: User 
 @api_router.get("/notifications")
 async def get_notifications(current_user: User = Depends(get_current_user)):
     notifications = await db.notifications_log.find({}, {"_id": 0}).sort("sent_at", -1).to_list(1000)
-    for notif in notifications:
-        if isinstance(notif.get("sent_at"), str):
-            notif["sent_at"] = datetime.fromisoformat(notif["sent_at"])
     return notifications
 
 # Include the router in the main app

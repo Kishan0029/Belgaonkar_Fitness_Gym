@@ -216,8 +216,16 @@ const AddMember = () => {
     try {
       const invoiceUrl = `${API}/invoice/${successData.payment_id}`;
       const amountPaid = successData.member.amount_paid;
+      const totalAmount = successData.member.total_amount;
+      const balanceAmount = totalAmount - amountPaid;
 
-      const message = `Hi ${successData.member.full_name},\n\nWe have received your payment of ₹${amountPaid}.\n\nDownload your invoice here:\n${invoiceUrl}\n\nThank you for training with Belgaonkar Fitness`;
+      let message = `Hi ${successData.member.full_name},\n\nWe have received your payment of ₹${amountPaid}.`;
+
+      if (balanceAmount > 0) {
+        message += `\nYour pending balance is ₹${balanceAmount.toFixed(2)}.`;
+      }
+
+      message += `\n\nDownload your invoice here:\n${invoiceUrl}\n\nThank you for training with Belgaonkar Fitness`;
 
       let phone = successData.member.phone_number.replace(/[^0-9]/g, '');
       if (!phone.startsWith('91') && phone.length === 10) {

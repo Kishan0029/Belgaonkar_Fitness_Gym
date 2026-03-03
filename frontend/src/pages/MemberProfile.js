@@ -11,10 +11,11 @@ import {
   DollarSign,
   UserCheck,
   Edit,
-  MessageCircle,
   CreditCard,
   Download,
-  Trash2
+  Trash2,
+  RefreshCw,
+  MessageCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -33,6 +34,17 @@ const MemberProfile = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('Cash');
+
+  // Renewal State
+  const [allPackages, setAllPackages] = useState([]);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewData, setRenewData] = useState({
+    package_id: '',
+    duration_days: '',
+    total_amount: '',
+    amount_paid: '',
+    payment_mode: 'Cash'
+  });
 
   const { isAdmin } = useAuth();
 
@@ -65,6 +77,7 @@ const MemberProfile = () => {
       const packageRes = await axios.get(`${API}/packages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      setAllPackages(packageRes.data);
       const pkg = packageRes.data.find((p) => p.id === memberRes.data.package_id);
       setMemberPackage(pkg);
     } catch (error) {
@@ -95,6 +108,63 @@ const MemberProfile = () => {
     } catch (error) {
       console.error('Error recording payment:', error);
       toast.error('Failed to record payment');
+    }
+  };
+
+  const handleRenewChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'package_id') {
+      const selectedPkg = allPackages.find(p => p.id === value);
+      if (selectedPkg) {
+        setRenewData(prev => ({
+          ...prev,
+          package_id: selectedPkg.id,
+          duration_days: selectedPkg.duration_days,
+          total_amount: selectedPkg.price,
+          amount_paid: selectedPkg.price
+        }));
+        return;
+      }
+    }
+    setRenewData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRenewSubmit = async (e) => {
+    e.preventDefault();
+    const pendingAmount = member.total_amount - member.amount_paid;
+    if (pendingAmount > 0) {
+      toast.error('Clear pending dues before renewal.');
+      return;
+    }
+    if (parseFloat(renewData.amount_paid) > parseFloat(renewData.total_amount)) {
+      toast.error('Amount paid cannot exceed total amount');
+      return;
+    }
+    try {
+      await axios.post(
+        `${API}/members/${id}/renew`,
+        {
+          package_id: renewData.package_id,
+          duration_days: parseInt(renewData.duration_days),
+          total_amount: parseFloat(renewData.total_amount),
+          amount_paid: parseFloat(renewData.amount_paid),
+          payment_mode: renewData.payment_mode
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Membership renewed successfully');
+      setShowRenewModal(false);
+      setRenewData({
+        package_id: '',
+        duration_days: '',
+        total_amount: '',
+        amount_paid: '',
+        payment_mode: 'Cash'
+      });
+      fetchMemberData();
+    } catch (error) {
+      console.error('Error renewing membership:', error);
+      toast.error(error.response?.data?.detail || 'Failed to renew membership');
     }
   };
 
@@ -145,7 +215,7 @@ const MemberProfile = () => {
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this member? This will remove all their data including payments and attendance.')) return;
-    
+
     try {
       await axios.delete(`${API}/members/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -199,7 +269,15 @@ const MemberProfile = () => {
             </h1>
             <p className="text-text-muted mt-1">{member.phone_number}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowRenewModal(true)}
+              data-testid="renew-member-button"
+              className="inline-flex items-center justify-center bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 h-12 px-6 rounded-lg font-medium transition-colors"
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Renew
+            </button>
             <Link
               to={`/members/${id}/edit`}
               data-testid="edit-member-button"
@@ -424,6 +502,32 @@ const MemberProfile = () => {
         )}
       </div>
 
+      {/* Membership Cycles History */}
+      {member.membership_history && member.membership_history.length > 0 && (
+        <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+          <h2 className="text-xl font-semibold text-text-main mb-4 font-heading">Previous Cycles</h2>
+          <div className="space-y-3">
+            {member.membership_history.map((cycle, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-4 bg-background-subtle rounded-lg"
+              >
+                <div>
+                  <p className="font-medium text-text-main">{cycle.package_name} ({cycle.duration_days} days)</p>
+                  <p className="text-sm text-text-muted mt-0.5">
+                    {format(new Date(cycle.start_date), 'dd MMM yyyy')} to {format(new Date(cycle.expiry_date), 'dd MMM yyyy')}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-text-main">₹{cycle.total_amount}</p>
+                  <p className="text-xs text-text-muted">Paid: ₹{cycle.amount_paid}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -470,6 +574,97 @@ const MemberProfile = () => {
                   className="flex-1 bg-primary text-primary-foreground hover:bg-primary-hover h-12 px-6 rounded-lg font-semibold shadow-sm transition-colors"
                 >
                   Record
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Renew Modal */}
+      {showRenewModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 my-8">
+            <h3 className="text-xl font-semibold text-text-main mb-4 font-heading">Renew Membership</h3>
+            <form onSubmit={handleRenewSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-main mb-1.5">Package</label>
+                <select
+                  name="package_id"
+                  value={renewData.package_id}
+                  onChange={handleRenewChange}
+                  required
+                  className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                >
+                  <option value="">Select Package</option>
+                  {allPackages.map(pkg => (
+                    <option key={pkg.id} value={pkg.id}>{pkg.package_name} ({pkg.duration_days} days)</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-main mb-1.5">Duration (days)</label>
+                  <input
+                    type="number"
+                    name="duration_days"
+                    value={renewData.duration_days}
+                    readOnly
+                    className="w-full h-12 px-4 rounded-lg border border-border bg-gray-100 text-base"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-main mb-1.5">Total Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="total_amount"
+                    value={renewData.total_amount}
+                    readOnly
+                    className="w-full h-12 px-4 rounded-lg border border-border bg-gray-100 text-base"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-main mb-1.5">Amount Paid</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="amount_paid"
+                    value={renewData.amount_paid}
+                    onChange={handleRenewChange}
+                    required
+                    className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-main mb-1.5">Payment Mode</label>
+                  <select
+                    name="payment_mode"
+                    value={renewData.payment_mode}
+                    onChange={handleRenewChange}
+                    className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Card">Card</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowRenewModal(false)}
+                  className="flex-1 bg-white border border-border text-text-main hover:bg-secondary h-12 px-6 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-hover h-12 px-6 rounded-lg font-semibold shadow-sm transition-colors"
+                >
+                  Renew
                 </button>
               </div>
             </form>
