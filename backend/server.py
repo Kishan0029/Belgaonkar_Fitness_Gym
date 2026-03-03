@@ -172,6 +172,33 @@ class DashboardStats(BaseModel):
     pending_payments: float
     inactive_members: int
 
+class ExpenseCreate(BaseModel):
+    amount: float
+    category: str
+    description: Optional[str] = None
+    payment_mode: str  # Cash / UPI / Bank
+    expense_date: datetime
+
+class ExpenseUpdate(BaseModel):
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    payment_mode: Optional[str] = None
+    expense_date: Optional[datetime] = None
+
+class Expense(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    amount: float
+    category: str
+    description: Optional[str] = None
+    payment_mode: str
+    expense_date: datetime
+    status: str = "active"
+    cancelled_at: Optional[datetime] = None
+    cancelled_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # =============== AUTH HELPERS ===============
 
 def verify_password(plain_password, hashed_password):
@@ -992,6 +1019,158 @@ async def generate_invoice(payment_id: str):
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename={file_name}"
     })
+
+# =============== EXPENSES ROUTES ===============
+
+@api_router.post("/expenses", response_model=Expense)
+async def create_expense(expense_data: ExpenseCreate, current_user: User = Depends(get_current_user)):
+    if expense_data.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0.")
+    
+    expense = Expense(
+        amount=expense_data.amount,
+        category=expense_data.category,
+        description=expense_data.description,
+        payment_mode=expense_data.payment_mode,
+        expense_date=expense_data.expense_date,
+        status="active"
+    )
+    expense_dict = expense.model_dump()
+    expense_dict["expense_date"] = expense_dict["expense_date"].isoformat()
+    expense_dict["created_at"] = expense_dict["created_at"].isoformat()
+    
+    await db.expenses.insert_one(expense_dict)
+    return expense
+
+@api_router.get("/expenses", response_model=List[Expense])
+async def get_expenses(start_date: Optional[str] = None, end_date: Optional[str] = None, category: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if start_date or end_date:
+        query["expense_date"] = {}
+        if start_date:
+            try:
+                # Add check to parse date properly or just rely on isoformat substring
+                query["expense_date"]["$gte"] = start_date
+            except Exception:
+                pass
+        if end_date:
+            query["expense_date"]["$lte"] = end_date
+    if category:
+        query["category"] = category
+        
+    expenses = await db.expenses.find(query, {"_id": 0}).sort([("expense_date", -1), ("created_at", -1)]).to_list(10000)
+    for exp in expenses:
+        if isinstance(exp.get("expense_date"), str):
+            exp["expense_date"] = datetime.fromisoformat(exp["expense_date"])
+        if isinstance(exp.get("created_at"), str):
+            exp["created_at"] = datetime.fromisoformat(exp["created_at"])
+        if exp.get("cancelled_at") and isinstance(exp["cancelled_at"], str):
+            exp["cancelled_at"] = datetime.fromisoformat(exp["cancelled_at"])
+    return expenses
+
+@api_router.patch("/expenses/{expense_id}", response_model=Expense)
+async def update_expense(expense_id: str, expense_data: ExpenseUpdate, current_user: User = Depends(get_current_user)):
+    expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+        
+    update_dict = {k: v for k, v in expense_data.model_dump(exclude_unset=True).items() if v is not None}
+    
+    if "amount" in update_dict and update_dict["amount"] <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0.")
+    
+    # Do NOT allow editing: created_at, status, cancelled_at
+    for field in ["created_at", "status", "cancelled_at"]:
+        update_dict.pop(field, None)
+        
+    if "expense_date" in update_dict and isinstance(update_dict["expense_date"], datetime):
+        update_dict["expense_date"] = update_dict["expense_date"].isoformat()
+        
+    if update_dict:
+        await db.expenses.update_one({"id": expense_id}, {"$set": update_dict})
+        
+    updated_expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+    if isinstance(updated_expense.get("expense_date"), str):
+        updated_expense["expense_date"] = datetime.fromisoformat(updated_expense["expense_date"])
+    if isinstance(updated_expense.get("created_at"), str):
+        updated_expense["created_at"] = datetime.fromisoformat(updated_expense["created_at"])
+    if updated_expense.get("cancelled_at") and isinstance(updated_expense["cancelled_at"], str):
+        updated_expense["cancelled_at"] = datetime.fromisoformat(updated_expense["cancelled_at"])
+        
+    return Expense(**updated_expense)
+
+@api_router.patch("/expenses/{expense_id}/cancel", response_model=Expense)
+async def cancel_expense(expense_id: str, current_user: User = Depends(get_current_user)):
+    expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+        
+    update_dict = {
+        "status": "cancelled",
+        "cancelled_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.expenses.update_one({"id": expense_id}, {"$set": update_dict})
+    
+    updated_expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+    if isinstance(updated_expense.get("expense_date"), str):
+        updated_expense["expense_date"] = datetime.fromisoformat(updated_expense["expense_date"])
+    if isinstance(updated_expense.get("created_at"), str):
+        updated_expense["created_at"] = datetime.fromisoformat(updated_expense["created_at"])
+    if updated_expense.get("cancelled_at") and isinstance(updated_expense["cancelled_at"], str):
+        updated_expense["cancelled_at"] = datetime.fromisoformat(updated_expense["cancelled_at"])
+        
+    return Expense(**updated_expense)
+
+# =============== FINANCIAL SUMMARY ROUTES ===============
+
+@api_router.get("/financial-summary")
+async def get_financial_summary(month: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    # Default to current month if not provided
+    if not month:
+        current_time = datetime.now(timezone.utc)
+        month = f"{current_time.year}-{current_time.month:02d}"
+        
+    # Attempt to parse month to get start and end dates
+    try:
+        year, month_int = map(int, month.split('-'))
+        start_date = datetime(year, month_int, 1, tzinfo=timezone.utc)
+        # Next month start date
+        if month_int == 12:
+            end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            end_date = datetime(year, month_int + 1, 1, tzinfo=timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
+        
+    start_date_str = start_date.isoformat()
+    end_date_str = end_date.isoformat()
+    
+    # Calculate Monthly Revenue (Sum of payments within month)
+    monthly_revenue = 0.0
+    payments = await db.payments.find({
+        "payment_date": {"$gte": start_date_str, "$lt": end_date_str}
+    }, {"_id": 0}).to_list(10000)
+    for payment in payments:
+        monthly_revenue += payment.get("amount_paid", 0.0)
+        
+    # Calculate Monthly Expenses (Sum of expenses within month AND status = 'active')
+    monthly_expenses = 0.0
+    expenses = await db.expenses.find({
+        "expense_date": {"$gte": start_date_str, "$lt": end_date_str},
+        "status": "active"
+    }, {"_id": 0}).to_list(10000)
+    for exp in expenses:
+        monthly_expenses += exp.get("amount", 0.0)
+        
+    monthly_profit = monthly_revenue - monthly_expenses
+    
+    return {
+        "month": month,
+        "monthly_revenue": monthly_revenue,
+        "monthly_expenses": monthly_expenses,
+        "monthly_profit": monthly_profit
+    }
 
 # =============== NOTIFICATIONS ===============
 
