@@ -100,13 +100,11 @@ const Login = () => {
           </form>
         </div>
 
-        <div className="mt-8 text-center flex flex-col items-center justify-center space-y-3">
-          <p className="text-sm text-text-muted">Developed by nextverse</p>
-          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-            <img src={nextverseLogo} alt="Nextverse" className="w-48 h-auto object-contain" />
-          </a>
-          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline font-medium">
-            gonextverse.in
+        <div className="mt-8 pt-6 border-t border-border flex flex-col items-center justify-center space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-text-muted">Developed By</p>
+          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="group flex flex-col items-center space-y-2.5 transition-transform hover:scale-105">
+            <img src={nextverseLogo} alt="Nextverse" className="h-9 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
+            <span className="text-sm font-medium text-primary opacity-80 group-hover:opacity-100 transition-all group-hover:underline">gonextverse.in</span>
           </a>
         </div>
       </div>
