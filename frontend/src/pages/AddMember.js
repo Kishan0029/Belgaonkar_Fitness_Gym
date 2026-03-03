@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Download, MessageCircle, CheckCircle } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -15,6 +15,8 @@ const AddMember = () => {
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [successData, setSuccessData] = useState(null);
+  const [hasPaymentHistory, setHasPaymentHistory] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     phone_number: '',
@@ -24,7 +26,6 @@ const AddMember = () => {
     total_amount: '',
     discount_amount: '0',
     amount_paid: '0',
-    payment_status: 'Pending',
     payment_mode: 'Cash',
     assigned_trainer: '',
     date_of_birth: '',
@@ -68,12 +69,12 @@ const AddMember = () => {
         total_amount: member.total_amount.toString(),
         discount_amount: (member.discount_amount || 0).toString(),
         amount_paid: member.amount_paid.toString(),
-        payment_status: member.payment_status,
         assigned_trainer: member.assigned_trainer || '',
         date_of_birth: member.date_of_birth ? member.date_of_birth.split('T')[0] : '',
         pt_plan: member.pt_plan || '',
         pt_price: (member.pt_price || 0).toString()
       });
+      setHasPaymentHistory(member.amount_paid > 0);
     } catch (error) {
       console.error('Error fetching member:', error);
       toast.error('Failed to load member data');
@@ -129,6 +130,12 @@ const AddMember = () => {
     e.preventDefault();
     setLoading(true);
 
+    if (!isEdit && parseFloat(formData.amount_paid) <= 0) {
+      toast.error('Starting members must make an initial payment.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const submitData = {
         ...formData,
@@ -148,13 +155,29 @@ const AddMember = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Member updated successfully');
+        navigate('/members');
       } else {
-        await axios.post(`${API}/members`, submitData, {
+        const response = await axios.post(`${API}/members`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Member added successfully');
+
+        // Show Invoice options
+        if (submitData.amount_paid > 0) {
+          try {
+            const paymentsRes = await axios.get(`${API}/payments/member/${response.data.id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (paymentsRes.data && paymentsRes.data.length > 0) {
+              setSuccessData({ member: response.data, payment_id: paymentsRes.data[0].id });
+              return; // Stay on page to show options
+            }
+          } catch (e) {
+            console.error('Error fetching payments for invoice', e);
+          }
+        }
+        navigate('/members');
       }
-      navigate('/members');
     } catch (error) {
       console.error('Error saving member:', error);
       toast.error(error.response?.data?.detail || 'Failed to save member');
@@ -163,9 +186,102 @@ const AddMember = () => {
     }
   };
 
+  const downloadInvoice = async (paymentId, skipDownload = false) => {
+    try {
+      const response = await axios.get(`${API}/invoice/${paymentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      if (!skipDownload) {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `invoice_${paymentId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Invoice downloaded');
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      toast.error('Failed to download invoice');
+      throw error;
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!successData) return;
+    try {
+      toast('Generating invoice for WhatsApp sharing...', { duration: 2000 });
+      const blob = await downloadInvoice(successData.payment_id, true);
+      const file = new File([blob], `Invoice_${successData.member.full_name}.pdf`, { type: 'application/pdf' });
+      // Gym name fallback: standard phrasing
+      const message = `Hi ${successData.member.full_name},\n\nHere is your membership invoice from Burnout Fitness.\n\nThank you for training with us 💪`;
+
+      const phone = successData.member.phone_number.replace(/[^0-9]/g, '');
+      const phoneWithCode = phone.startsWith('91') ? phone : `91${phone}`;
+      const fallbackLink = `https://wa.me/${phoneWithCode}?text=${encodeURIComponent(message)}`;
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'Membership Invoice',
+          text: message,
+          files: [file]
+        });
+      } else {
+        toast.error('Direct PDF attachment not supported by this browser. Falling back to simple WhatsApp link.');
+        window.open(fallbackLink, '_blank');
+      }
+    } catch (error) {
+      console.error("WhatsApp share error", error);
+      toast.error('Failed to share via WhatsApp.');
+    }
+  };
+
   const finalAmount = parseFloat(formData.total_amount) || 0;
   const discountAmt = parseFloat(formData.discount_amount) || 0;
   const ptAmt = parseFloat(formData.pt_price) || 0;
+
+  if (successData) {
+    return (
+      <div className="max-w-xl mx-auto mt-12 bg-white rounded-xl border border-border shadow-sm p-8 text-center">
+        <div className="flex justify-center mb-6">
+          <CheckCircle className="w-16 h-16 text-status-success" />
+        </div>
+        <h2 className="text-3xl font-bold text-text-main mb-2">Member Created Successfully!</h2>
+        <p className="text-text-muted mb-8">
+          The membership for {successData.member.full_name} has been processed successfully.
+        </p>
+
+        <div className="space-y-4">
+          <button
+            onClick={() => downloadInvoice(successData.payment_id)}
+            className="w-full flex items-center justify-center bg-white border-2 border-primary text-primary hover:bg-primary-light h-14 px-6 rounded-lg font-semibold transition-colors"
+          >
+            <Download className="w-5 h-5 mr-2" />
+            Download Invoice
+          </button>
+
+          <button
+            onClick={handleShareWhatsApp}
+            className="w-full flex items-center justify-center bg-[#25D366] text-white hover:bg-[#20BE5A] h-14 px-6 rounded-lg font-semibold transition-colors shadow-sm"
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            Share via WhatsApp
+          </button>
+        </div>
+
+        <button
+          onClick={() => navigate('/members')}
+          className="mt-8 text-text-muted hover:text-text-main font-medium underline-offset-4 hover:underline transition-all"
+        >
+          Return to Members List
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -263,14 +379,19 @@ const AddMember = () => {
               <label htmlFor="package_id" className="block text-sm font-medium text-text-main mb-1.5">
                 Package *
               </label>
+              {hasPaymentHistory && (
+                <p className="text-xs text-status-warning mb-2 font-medium">Locked: Financial history exists.</p>
+              )}
               <select
                 id="package_id"
                 name="package_id"
                 value={formData.package_id}
                 onChange={handleChange}
                 required
+                disabled={hasPaymentHistory}
                 data-testid="package-select"
-                className="w-full h-12 px-4 pr-10 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className={`w-full h-12 px-4 pr-10 rounded-lg border border-border text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${hasPaymentHistory ? 'bg-gray-100 text-text-muted cursor-not-allowed' : 'bg-white'
+                  }`}
               >
                 <option value="">Select a package</option>
                 {packages.length === 0 && <option value="" disabled>No packages available. Please add packages first.</option>}
@@ -286,6 +407,9 @@ const AddMember = () => {
               <label htmlFor="discount_amount" className="block text-sm font-medium text-text-main mb-1.5">
                 Discount Amount
               </label>
+              {hasPaymentHistory && (
+                <p className="text-xs text-status-warning mb-2 font-medium">Locked: Financial history exists.</p>
+              )}
               <input
                 id="discount_amount"
                 type="number"
@@ -293,8 +417,10 @@ const AddMember = () => {
                 name="discount_amount"
                 value={formData.discount_amount}
                 onChange={handleChange}
+                disabled={hasPaymentHistory}
                 data-testid="discount-input"
-                className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className={`w-full h-12 px-4 rounded-lg border border-border text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${hasPaymentHistory ? 'bg-gray-100 text-text-muted cursor-not-allowed' : 'bg-white'
+                  }`}
                 placeholder="0.00"
               />
             </div>
@@ -341,13 +467,18 @@ const AddMember = () => {
               <label htmlFor="pt_plan" className="block text-sm font-medium text-text-main mb-1.5">
                 PT Plan
               </label>
+              {hasPaymentHistory && (
+                <p className="text-xs text-status-warning mb-2 font-medium">Locked: Financial history exists.</p>
+              )}
               <select
                 id="pt_plan"
                 name="pt_plan"
                 value={formData.pt_plan}
                 onChange={handleChange}
+                disabled={hasPaymentHistory}
                 data-testid="pt-plan-select"
-                className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className={`w-full h-12 px-4 rounded-lg border border-border text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${hasPaymentHistory ? 'bg-gray-100 text-text-muted cursor-not-allowed' : 'bg-white'
+                  }`}
               >
                 <option value="">No PT</option>
                 <option value="alternate_day">Alternate Day Training - ₹4,000/month</option>
@@ -360,6 +491,9 @@ const AddMember = () => {
                 <label htmlFor="pt_price" className="block text-sm font-medium text-text-main mb-1.5">
                   PT Price (auto-filled)
                 </label>
+                {hasPaymentHistory && (
+                  <p className="text-xs text-status-warning mb-2 font-medium">Locked: Financial history exists.</p>
+                )}
                 <input
                   id="pt_price"
                   type="number"
@@ -367,7 +501,11 @@ const AddMember = () => {
                   name="pt_price"
                   value={formData.pt_price}
                   readOnly
-                  className="w-full h-12 px-4 rounded-lg border border-border bg-gray-100 text-base"
+                  disabled={hasPaymentHistory}
+                  data-testid="pt-price-input"
+                  className={`w-full h-12 px-4 rounded-lg border border-border text-base ${hasPaymentHistory ? 'bg-gray-100 text-text-muted cursor-not-allowed' : 'bg-gray-100'
+                    }`}
+                  placeholder="0.00"
                 />
               </div>
             )}
@@ -409,6 +547,9 @@ const AddMember = () => {
               <label htmlFor="total_amount" className="block text-sm font-medium text-text-main mb-1.5">
                 Total Amount (auto-calculated)
               </label>
+              {hasPaymentHistory && (
+                <p className="text-xs text-status-warning mb-2 font-medium">Locked: Financial history exists.</p>
+              )}
               <input
                 id="total_amount"
                 type="number"
@@ -435,24 +576,6 @@ const AddMember = () => {
                 className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="0.00"
               />
-            </div>
-
-            <div>
-              <label htmlFor="payment_status" className="block text-sm font-medium text-text-main mb-1.5">
-                Payment Status
-              </label>
-              <select
-                id="payment_status"
-                name="payment_status"
-                value={formData.payment_status}
-                onChange={handleChange}
-                data-testid="payment-status-select"
-                className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              >
-                <option value="Pending">Pending</option>
-                <option value="Partial">Partial</option>
-                <option value="Paid">Paid</option>
-              </select>
             </div>
 
             <div>

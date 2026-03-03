@@ -86,7 +86,7 @@ class MemberCreate(BaseModel):
     package_id: str
     join_date: datetime
     membership_start_date: datetime
-    payment_status: str = "Pending"  # Paid, Partial, Pending
+    payment_status: str = "Partial"  # Paid, Partial
     total_amount: float
     discount_amount: float = 0.0
     amount_paid: float = 0.0
@@ -359,12 +359,22 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
     if existing:
         raise HTTPException(status_code=400, detail="Phone number already registered")
     
+    if member_data.amount_paid is None or member_data.amount_paid <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Member cannot be created without payment."
+        )
+
     # Get package to calculate expiry
     package = await db.packages.find_one({"id": member_data.package_id}, {"_id": 0})
     if not package:
         raise HTTPException(status_code=404, detail="Package not found")
     
     expiry_date = member_data.membership_start_date + timedelta(days=package["duration_days"])
+    
+    amount_paid = member_data.amount_paid
+    total_amount = member_data.total_amount
+    payment_status = "Paid" if amount_paid >= total_amount else "Partial"
     
     member = Member(
         full_name=member_data.full_name,
@@ -373,8 +383,8 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         membership_start_date=member_data.membership_start_date,
         package_id=member_data.package_id,
         expiry_date=expiry_date,
-        payment_status=member_data.payment_status,
-        total_amount=member_data.total_amount,
+        payment_status=payment_status,
+        total_amount=total_amount,
         discount_amount=member_data.discount_amount,
         amount_paid=member_data.amount_paid,
         assigned_trainer=member_data.assigned_trainer,
@@ -525,6 +535,19 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
         
         update_dict["expiry_date"] = (start_date + timedelta(days=package["duration_days"])).isoformat()
     
+    # Dynamically compute total paid
+    payment_records = await db.payments.find({"member_id": member_id}, {"_id": 0}).to_list(1000)
+    derived_total_paid = sum(p["amount_paid"] for p in payment_records)
+
+    if "total_amount" in update_dict and derived_total_paid > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Total amount cannot be modified after payment has been recorded."
+        )
+
+    new_total_amount = update_dict.get("total_amount", member.get("total_amount", 0))
+    update_dict["payment_status"] = "Paid" if derived_total_paid >= new_total_amount else "Partial"
+    
     # Convert datetime fields to ISO format for storage
     for field in ["membership_start_date"]:
         if field in update_dict and isinstance(update_dict[field], datetime):
@@ -658,22 +681,23 @@ async def record_payment(payment_data: PaymentCreate, current_user: User = Depen
     
     await db.payments.insert_one(payment_dict)
     
-    # Update member's amount_paid and payment_status
+    # Update member's amount_paid and payment_status securely via derivation
     member = await db.members.find_one({"id": payment_data.member_id}, {"_id": 0})
     if member:
-        new_amount_paid = member["amount_paid"] + payment_data.amount_paid
-        payment_status = "Paid" if new_amount_paid >= member["total_amount"] else "Partial" if new_amount_paid > 0 else "Pending"
+        payment_records = await db.payments.find({"member_id": payment_data.member_id}, {"_id": 0}).to_list(1000)
+        derived_total_paid = sum(p["amount_paid"] for p in payment_records)
+        payment_status = "Paid" if derived_total_paid >= member["total_amount"] else "Partial"
         
         await db.members.update_one(
             {"id": payment_data.member_id},
-            {"$set": {"amount_paid": new_amount_paid, "payment_status": payment_status}}
+            {"$set": {"amount_paid": derived_total_paid, "payment_status": payment_status}}
         )
     
     return payment
 
 @api_router.get("/payments/member/{member_id}")
 async def get_member_payments(member_id: str, current_user: User = Depends(get_current_user)):
-    payments = await db.payments.find({"member_id": member_id}, {"_id": 0}).sort("payment_date", -1).to_list(1000)
+    payments = await db.payments.find({"member_id": member_id}, {"_id": 0}).sort([("payment_date", -1), ("created_at", -1)]).to_list(1000)
     for payment in payments:
         if isinstance(payment.get("payment_date"), str):
             payment["payment_date"] = datetime.fromisoformat(payment["payment_date"])
@@ -686,7 +710,7 @@ async def get_all_payments(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can view all payments")
     
-    payments = await db.payments.find({}, {"_id": 0}).sort("payment_date", -1).to_list(10000)
+    payments = await db.payments.find({}, {"_id": 0}).sort([("payment_date", -1), ("created_at", -1)]).to_list(10000)
     for payment in payments:
         if isinstance(payment.get("payment_date"), str):
             payment["payment_date"] = datetime.fromisoformat(payment["payment_date"])
