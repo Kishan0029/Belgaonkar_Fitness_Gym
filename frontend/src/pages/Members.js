@@ -53,7 +53,7 @@ const Members = () => {
     if (!phone.startsWith('91') && phone.length === 10) phone = `91${phone}`;
     else if (!phone.startsWith('91')) phone = `91${phone}`;
 
-    const message = `Hi ${member.full_name},\n\nThis is Burnout Fitness.\n\nHow can we help you today? 💪`;
+    const message = `Hi ${member.full_name},\n\nThis is Belgaonkar Fitness.\n\nHow can we help you today?`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
   };
@@ -199,8 +199,8 @@ const Members = () => {
                 onClick={() => setStatusFilter(filter)}
                 data-testid={`filter-${filter}`}
                 className={`px-4 h-12 rounded-lg font-medium whitespace-nowrap transition-colors ${statusFilter === filter
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-white border border-border text-text-muted hover:bg-secondary'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-white border border-border text-text-muted hover:bg-secondary'
                   }`}
               >
                 {filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -270,8 +270,8 @@ const Members = () => {
                   onClick={(e) => handleMarkAttendance(e, member.id)}
                   disabled={attendanceMarked[member.id]}
                   className={`flex items-center justify-center py-2 rounded-lg text-xs font-medium transition-colors border ${attendanceMarked[member.id]
-                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                      : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200'
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                    : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200'
                     }`}
                 >
                   <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
