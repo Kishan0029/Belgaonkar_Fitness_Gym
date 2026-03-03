@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import nextverseLogo from '../assets/nextverse_horizontal.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -99,7 +100,15 @@ const Login = () => {
           </form>
         </div>
 
-
+        <div className="mt-8 text-center flex flex-col items-center justify-center space-y-3">
+          <p className="text-sm text-text-muted">Developed by nextverse</p>
+          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+            <img src={nextverseLogo} alt="Nextverse" className="h-6 object-contain" />
+          </a>
+          <a href="https://gonextverse.in" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline font-medium">
+            gonextverse.in
+          </a>
+        </div>
       </div>
     </div>
   );
