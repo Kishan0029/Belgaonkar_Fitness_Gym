@@ -5,20 +5,29 @@
     <meta charset="UTF-8">
 
     <style>
+        /* A4 PAGE CONTROL */
+        @page {
+            size: A4;
+            margin: 25px;
+        }
+
         body {
             background: #eef2f5;
             font-family: Arial, Helvetica, sans-serif;
-            padding: 40px;
+            padding: 15px;
         }
 
         .invoice-container {
             max-width: 720px;
             margin: auto;
             background: white;
-            padding: 40px;
+            padding: 28px;
             border-radius: 10px;
-            box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+            page-break-inside: avoid;
         }
+
+        /* HEADER */
 
         .header {
             display: flex;
@@ -27,7 +36,7 @@
         }
 
         .logo {
-            height: 60px;
+            height: 55px;
         }
 
         .invoice-title {
@@ -36,19 +45,21 @@
 
         .invoice-title h1 {
             margin: 0;
-            font-size: 32px;
+            font-size: 30px;
         }
 
         .invoice-id {
             color: #555;
-            margin-top: 6px;
-            font-size: 14px;
+            margin-top: 4px;
+            font-size: 13px;
         }
 
         .divider {
-            margin: 25px 0;
+            margin: 18px 0;
             border-top: 1px solid #ddd;
         }
+
+        /* TOP INFO */
 
         .top-section {
             display: flex;
@@ -56,89 +67,96 @@
         }
 
         .gym-info {
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 13px;
+            line-height: 1.5;
         }
 
         .date {
             text-align: right;
-            font-size: 14px;
+            font-size: 13px;
         }
 
+        /* SECTION TITLES */
+
         .section-title {
-            margin-top: 30px;
-            font-size: 13px;
+            margin-top: 18px;
+            font-size: 12px;
             color: #666;
             font-weight: bold;
         }
 
+        /* MEMBER BOX */
+
         .member-box {
             background: #f3f5f7;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
+
+        /* TABLES */
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         th {
             background: #111;
             color: white;
             text-align: left;
-            padding: 12px;
-            font-size: 14px;
+            padding: 10px;
+            font-size: 13px;
         }
 
         td {
-            padding: 12px;
+            padding: 10px;
             border-bottom: 1px solid #eee;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .payment-table td {
             border: none;
         }
 
+        /* REFUND POLICY */
+
         .footer {
-            margin-top: 30px;
-            font-size: 12px;
+            margin-top: 18px;
+            font-size: 11px;
             color: #666;
         }
 
-        /* ---------- NEXTVERSE FOOTER ---------- */
+        /* NEXTVERSE BRANDING */
 
         .nextverse-footer {
-            margin-top: 40px;
-            padding-top: 20px;
+            margin-top: 25px;
+            padding-top: 15px;
             border-top: 1px solid #ddd;
             text-align: center;
         }
 
         .engineered {
-            font-size: 13px;
+            font-size: 12px;
             color: #444;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .engineered span {
-            color: #f25252;
+            color: #ff4d4d;
             font-weight: 600;
         }
 
         .nextverse-logo {
-            width: 130px;
-            opacity: 0.75;
-            margin-bottom: 5px;
+            width: 115px;
+            opacity: 0.8;
         }
 
         .nextverse-link {
             display: block;
             margin-top: 4px;
-            font-size: 12px;
+            font-size: 11px;
             color: #777;
         }
     </style>
@@ -263,8 +281,6 @@
             Memberships cannot be transferred.
 
         </div>
-
-        <!-- NEXTVERSE BRANDING -->
 
         <div class="nextverse-footer">
 
