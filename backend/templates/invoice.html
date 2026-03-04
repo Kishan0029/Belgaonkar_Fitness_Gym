@@ -1,294 +1,299 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<style>
+    <style>
+        /* FORCE A4 PRINT */
+        @page {
+            size: A4;
+            margin: 18mm;
+        }
 
-/* FORCE A4 */
-@page {
-    size: A4;
-    margin: 18mm;
-}
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            margin: 0;
+        }
 
-/* PRINT SAFE BODY */
-body{
-    font-family: Arial, Helvetica, sans-serif;
-    font-size:13px;
-    margin:0;
-}
+        .invoice-container {
+            width: 100%;
+        }
 
-/* MAIN CONTAINER */
-.invoice-container{
-    width:100%;
-}
+        /* HEADER */
 
-/* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
 
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-}
+        .logo {
+            height: 50px;
+        }
 
-.logo{
-    height:50px;
-}
+        .invoice-title {
+            text-align: right;
+        }
 
-.invoice-title{
-    text-align:right;
-}
+        .invoice-title h1 {
+            margin: 0;
+            font-size: 28px;
+        }
 
-.invoice-title h1{
-    margin:0;
-    font-size:28px;
-}
+        .invoice-id {
+            color: #555;
+            margin-top: 3px;
+            font-size: 12px;
+        }
 
-.invoice-id{
-    color:#555;
-    margin-top:4px;
-    font-size:12px;
-}
+        /* DIVIDER */
 
-/* DIVIDER */
+        .divider {
+            margin: 14px 0;
+            border-top: 1px solid #ddd;
+        }
 
-.divider{
-    margin:16px 0;
-    border-top:1px solid #ddd;
-}
+        /* TOP INFO */
 
-/* TOP SECTION */
+        .top-section {
+            display: flex;
+            justify-content: space-between;
+        }
 
-.top-section{
-    display:flex;
-    justify-content:space-between;
-}
+        .gym-info {
+            line-height: 1.5;
+        }
 
-.gym-info{
-    line-height:1.5;
-}
+        .date {
+            text-align: right;
+        }
 
-.date{
-    text-align:right;
-}
+        /* TITLES */
 
-/* TITLES */
+        .section-title {
+            margin-top: 14px;
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+        }
 
-.section-title{
-    margin-top:16px;
-    font-size:12px;
-    color:#666;
-    font-weight:bold;
-}
+        /* MEMBER BOX */
 
-/* MEMBER BOX */
+        .member-box {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
 
-.member-box{
-    background:#f5f5f5;
-    padding:10px;
-    border-radius:6px;
-    margin-top:6px;
-}
+        /* TABLES */
 
-/* TABLES */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
 
-table{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:6px;
-}
+        th {
+            background: #111;
+            color: white;
+            padding: 8px;
+            font-size: 12px;
+            text-align: left;
+        }
 
-th{
-    background:#111;
-    color:white;
-    padding:9px;
-    font-size:12px;
-    text-align:left;
-}
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
 
-td{
-    padding:9px;
-    border-bottom:1px solid #eee;
-}
+        .payment-table td {
+            border: none;
+        }
 
-.payment-table td{
-    border:none;
-}
+        /* POLICY */
 
-/* POLICY */
+        .footer {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #666;
+        }
 
-.footer{
-    margin-top:14px;
-    font-size:11px;
-    color:#666;
-}
+        /* NEXTVERSE */
 
-/* NEXTVERSE */
+        .nextverse-footer {
+            margin-top: 18px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+        }
 
-.nextverse-footer{
-    margin-top:22px;
-    padding-top:12px;
-    border-top:1px solid #ddd;
-    text-align:center;
-}
+        .engineered {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
 
-.engineered{
-    font-size:12px;
-    margin-bottom:6px;
-}
+        .engineered span {
+            color: #ff4d4d;
+            font-weight: 600;
+        }
 
-.engineered span{
-    color:#ff4d4d;
-    font-weight:600;
-}
+        .nextverse-logo {
+            width: 105px;
+            opacity: 0.8;
+        }
 
-.nextverse-logo{
-    width:110px;
-    opacity:0.8;
-}
-
-.nextverse-link{
-    font-size:11px;
-    color:#777;
-    margin-top:3px;
-}
-
-</style>
+        .nextverse-link {
+            font-size: 11px;
+            color: #777;
+            margin-top: 2px;
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="invoice-container">
+    <div class="invoice-container">
 
-<div class="header">
+        <div class="header">
 
-<img src="{{logo_url}}" class="logo">
+            <img src="{{logo_url}}" class="logo">
 
-<div class="invoice-title">
-<h1>INVOICE</h1>
-<div class="invoice-id">
-Invoice ID: {{invoice_number}}
-</div>
-</div>
+            <div class="invoice-title">
+                <h1>INVOICE</h1>
+                <div class="invoice-id">
+                    Invoice ID: {{invoice_number}}
+                </div>
+            </div>
 
-</div>
+        </div>
 
-<div class="divider"></div>
+        <div class="divider"></div>
 
-<div class="top-section">
+        <div class="top-section">
 
-<div class="gym-info">
+            <div class="gym-info">
 
-<strong>Belgaonkar Fitness Gym</strong><br>
-Owner: Rajesh<br>
-First Gate Above Dr Yalgi Clinic<br>
-Near Invitation Hotel<br>
-Tilakwadi Belgaum, Belagavi<br>
-Karnataka 590006<br>
-Phone: 8088019393
+                <strong>Belgaonkar Fitness Gym</strong><br>
+                Owner: Rajesh<br>
+                First Gate Above Dr Yalgi Clinic<br>
+                Near Invitation Hotel<br>
+                Tilakwadi Belgaum, Belagavi<br>
+                Karnataka 590006<br>
+                Phone: 8088019393
 
-</div>
+            </div>
 
-<div class="date">
-Date:<br>
-<strong>{{payment_date}}</strong>
-</div>
+            <div class="date">
+                Invoice Date:<br>
+                <strong>{{payment_date}}</strong>
+            </div>
 
-</div>
+        </div>
 
-<div class="section-title">
-MEMBER DETAILS
-</div>
+        <div class="section-title">
+            MEMBER DETAILS
+        </div>
 
-<div class="member-box">
+        <div class="member-box">
 
-<table class="payment-table">
+            <table class="payment-table">
 
-<tr>
-<td><strong>Name</strong></td>
-<td>{{member_name}}</td>
-</tr>
+                <tr>
+                    <td><strong>Name</strong></td>
+                    <td>{{member_name}}</td>
+                </tr>
 
-<tr>
-<td><strong>Phone</strong></td>
-<td>{{phone}}</td>
-</tr>
+                <tr>
+                    <td><strong>Phone</strong></td>
+                    <td>{{phone}}</td>
+                </tr>
 
-</table>
+            </table>
 
-</div>
+        </div>
 
-<div class="section-title">
-MEMBERSHIP
-</div>
+        <div class="section-title">
+            MEMBERSHIP
+        </div>
 
-<table>
+        <table>
 
-<tr>
-<th>Package</th>
-<th>Duration</th>
-<th>Expiry Date</th>
-</tr>
+            <tr>
+                <th>Package</th>
+                <th>Duration</th>
+                <th>Start Date</th>
+                <th>Expiry Date</th>
+            </tr>
 
-<tr>
-<td>{{package}}</td>
-<td>{{duration}} days</td>
-<td>{{expiry}}</td>
-</tr>
+            <tr>
+                <td>{{package}}</td>
+                <td>{{duration}} days</td>
+                <td>{{start_date}}</td>
+                <td>{{expiry}}</td>
+            </tr>
 
-</table>
+        </table>
 
-<div class="section-title">
-PAYMENT
-</div>
+        <div class="section-title">
+            PAYMENT
+        </div>
 
-<table>
+        <table>
 
-<tr>
-<td>Total Amount</td>
-<td style="text-align:right;">₹{{total}}</td>
-</tr>
+            <tr>
+                <td>Total Amount</td>
+                <td style="text-align:right;">₹{{total}}</td>
+            </tr>
 
-<tr>
-<td>Paid</td>
-<td style="text-align:right;">₹{{paid}}</td>
-</tr>
+            <tr>
+                <td>Paid</td>
+                <td style="text-align:right;">₹{{paid}}</td>
+            </tr>
 
-<tr>
-<td>Pending</td>
-<td style="text-align:right;">₹{{pending}}</td>
-</tr>
+            <tr>
+                <td>Pending</td>
+                <td style="text-align:right;">₹{{pending}}</td>
+            </tr>
 
-<tr>
-<td>Payment Mode</td>
-<td style="text-align:right;">{{mode}}</td>
-</tr>
+            <tr>
+                <td>Payment Mode</td>
+                <td style="text-align:right;">{{mode}}</td>
+            </tr>
 
-</table>
+            <tr>
+                <td>Payment Date</td>
+                <td style="text-align:right;">{{payment_date}}</td>
+            </tr>
 
-<div class="footer">
+        </table>
 
-<strong>Refund Policy:</strong><br>
-All payments are final. No refunds will be issued once payment is processed.<br>
-Memberships cannot be transferred.
+        <div class="footer">
 
-</div>
+            <strong>Refund Policy:</strong><br>
+            All payments are final. No refunds will be issued once payment is processed.<br>
+            Memberships cannot be transferred.
 
-<div class="nextverse-footer">
+        </div>
 
-<div class="engineered">
-Gym Software Engineered by <span>Nextverse</span>
-</div>
+        <div class="nextverse-footer">
 
-<img src="{{nextverse_logo}}" class="nextverse-logo">
+            <div class="engineered">
+                Gym Software Engineered by <span>Nextverse</span>
+            </div>
 
-<div class="nextverse-link">
-gonextverse.in
-</div>
+            <img src="{{nextverse_logo}}" class="nextverse-logo">
 
-</div>
+            <div class="nextverse-link">
+                gonextverse.in
+            </div>
 
-</div>
+        </div>
+
+    </div>
 
 </body>
+
 </html>
