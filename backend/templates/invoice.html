@@ -5,16 +5,16 @@
     <meta charset="UTF-8">
 
     <style>
-        /* A4 SETTINGS */
+        /* A4 PAGE SETTINGS */
         @page {
             size: A4;
-            margin: 20mm;
+            margin: 14mm;
         }
 
         body {
             background: #eef2f5;
             font-family: Arial, Helvetica, sans-serif;
-            padding: 30px;
+            padding: 18px;
         }
 
         /* MAIN CARD */
@@ -23,8 +23,9 @@
             max-width: 720px;
             margin: auto;
             background: white;
-            padding: 30px;
+            padding: 24px;
             border-radius: 12px;
+            page-break-inside: avoid;
         }
 
         /* HEADER */
@@ -36,8 +37,10 @@
         }
 
         .logo {
-            height: 55px;
+            height: 50px;
         }
+
+        /* INVOICE TITLE */
 
         .invoice-title {
             text-align: right;
@@ -45,21 +48,21 @@
 
         .invoice-title h1 {
             margin: 0;
-            font-size: 30px;
+            font-size: 28px;
         }
 
         .invoice-id {
-            margin-top: 5px;
-            font-size: 13px;
+            margin-top: 4px;
+            font-size: 12px;
             color: #555;
         }
 
         .divider {
-            margin: 16px 0;
+            margin: 14px 0;
             border-top: 1px solid #ddd;
         }
 
-        /* TOP INFO */
+        /* TOP SECTION */
 
         .top-section {
             display: flex;
@@ -67,20 +70,20 @@
         }
 
         .gym-info {
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.5;
         }
 
         .date {
             text-align: right;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         /* SECTION TITLES */
 
         .section-title {
-            margin-top: 18px;
-            font-size: 13px;
+            margin-top: 16px;
+            font-size: 12px;
             color: #666;
             font-weight: bold;
         }
@@ -89,7 +92,7 @@
 
         .member-box {
             background: #f3f5f7;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             margin-top: 6px;
         }
@@ -105,15 +108,15 @@
         th {
             background: #111;
             color: white;
-            padding: 9px;
-            font-size: 13px;
+            padding: 8px;
+            font-size: 12px;
             text-align: left;
         }
 
         td {
-            padding: 9px;
+            padding: 8px;
             border-bottom: 1px solid #eee;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .payment-table td {
@@ -123,22 +126,22 @@
         /* POLICY */
 
         .footer {
-            margin-top: 14px;
-            font-size: 12px;
+            margin-top: 10px;
+            font-size: 11px;
             color: #666;
         }
 
-        /* NEXTVERSE */
+        /* NEXTVERSE FOOTER */
 
         .nextverse-footer {
-            margin-top: 18px;
-            padding-top: 12px;
+            margin-top: 12px;
+            padding-top: 10px;
             border-top: 1px solid #ddd;
             text-align: center;
         }
 
         .engineered {
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .engineered span {
@@ -147,15 +150,15 @@
         }
 
         .nextverse-logo {
-            width: 110px;
-            margin-top: 5px;
+            width: 100px;
+            margin-top: 4px;
             opacity: 0.85;
         }
 
         .nextverse-link {
-            font-size: 12px;
+            font-size: 11px;
             color: #777;
-            margin-top: 3px;
+            margin-top: 2px;
         }
     </style>
 </head>
@@ -194,7 +197,7 @@
             </div>
 
             <div class="date">
-                Date:<br>
+                Invoice Date:<br>
                 <strong>{{payment_date}}</strong>
             </div>
 
