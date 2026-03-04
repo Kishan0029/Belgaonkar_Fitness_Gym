@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+import { isToday } from 'date-fns';
 import {
   Users,
   UserCheck,
@@ -11,7 +12,10 @@ import {
   Clock,
   UserX,
   Plus,
-  Cake
+  Cake,
+  Phone,
+  MessageCircle,
+  CalendarCheck
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -21,6 +25,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [financialSummary, setFinancialSummary] = useState(null);
   const [birthdayMembers, setBirthdayMembers] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +34,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsRes, birthdayRes, financeRes] = await Promise.all([
+      const [statsRes, birthdayRes, financeRes, enquiriesRes] = await Promise.all([
         axios.get(`${API}/dashboard/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -38,17 +43,48 @@ const Dashboard = () => {
         }),
         axios.get(`${API}/financial-summary`, {
           headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/enquiries`, {
+          headers: { Authorization: `Bearer ${token}` }
         })
       ]);
+
       setStats(statsRes.data);
       setBirthdayMembers(birthdayRes.data);
       setFinancialSummary(financeRes.data);
+
+      const todaysFollowUps = enquiriesRes.data.filter(e =>
+        e.follow_up_date && isToday(new Date(e.follow_up_date))
+      );
+      setFollowUps(todaysFollowUps);
+
     } catch (error) {
       console.error('Error fetching dashboard:', error);
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleWhatsApp = (name, phone, pkg) => {
+    if (!phone) {
+      toast.error('No phone number provided.');
+      return;
+    }
+    let cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`;
+
+    const message = `Hi ${name} 👋\n\nThank you for your enquiry at Belgaonkar Fitness Gym.\nOur ${pkg || 'membership'} details are available.\nLet us know if you'd like to visit for a trial 💪`;
+    const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(waLink, '_blank');
+  };
+
+  const handleCall = (phone) => {
+    if (!phone) {
+      toast.error('No phone number provided.');
+      return;
+    }
+    window.location.href = `tel:${phone}`;
   };
 
   if (loading) {
@@ -157,6 +193,38 @@ const Dashboard = () => {
                   <p key={member.id} className="text-sm text-text-main">
                     {member.full_name} - {member.phone_number}
                   </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Follow-ups Today Widget */}
+      {followUps.length > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-5" data-testid="followups-alert">
+          <div className="flex items-start gap-3">
+            <CalendarCheck className="w-6 h-6 text-orange-500 mt-0.5" />
+            <div className="flex-1 w-full">
+              <h3 className="font-semibold text-text-main mb-3">Follow-ups Today ({followUps.length})</h3>
+              <div className="space-y-3">
+                {followUps.map((enquiry) => (
+                  <div key={enquiry.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-orange-100 shadow-sm">
+                    <div>
+                      <p className="font-semibold text-sm text-text-main">{enquiry.name}</p>
+                      <p className="text-xs text-text-muted">{enquiry.phone_number} • {enquiry.package_interest}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleWhatsApp(enquiry.name, enquiry.phone_number, enquiry.package_interest)} className="flex items-center text-xs font-semibold bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-3 py-1.5 rounded-md transition-colors">
+                        <MessageCircle className="w-4 h-4 mr-1.5" />
+                        WhatsApp
+                      </button>
+                      <button onClick={() => handleCall(enquiry.phone_number)} className="flex items-center text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors">
+                        <Phone className="w-4 h-4 mr-1.5" />
+                        Call
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

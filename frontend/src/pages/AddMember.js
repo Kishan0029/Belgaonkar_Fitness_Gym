@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ const AddMember = () => {
   const { id } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isEdit = !!id;
 
   const [packages, setPackages] = useState([]);
@@ -18,8 +19,8 @@ const AddMember = () => {
   const [successData, setSuccessData] = useState(null);
   const [hasPaymentHistory, setHasPaymentHistory] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: '',
-    phone_number: '',
+    full_name: location.state?.name || '',
+    phone_number: location.state?.phone_number || '',
     package_id: '',
     join_date: new Date().toISOString().split('T')[0],
     membership_start_date: new Date().toISOString().split('T')[0],
@@ -48,6 +49,24 @@ const AddMember = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPackages(response.data);
+
+      // Auto-prefill package if navigating from Enquiries
+      if (!isEdit && location.state?.package_interest) {
+        const interest = location.state.package_interest;
+        const matchedPkg = response.data.find(p =>
+          p.package_name.toLowerCase() === interest.toLowerCase() ||
+          p.duration_days.toString() === interest ||
+          interest.toLowerCase().includes(p.package_name.toLowerCase())
+        );
+        if (matchedPkg) {
+          setFormData(prev => ({
+            ...prev,
+            package_id: matchedPkg.id,
+            total_amount: calculateTotal(matchedPkg.price, prev.discount_amount, prev.pt_price).toString()
+          }));
+          setPackagePrice(matchedPkg.price);
+        }
+      }
     } catch (error) {
       console.error('Error fetching packages:', error);
       toast.error('Failed to load packages');

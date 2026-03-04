@@ -1,7 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  LayoutDashboard,
+LayoutDashboard,
   Users,
   Package,
   UserCheck,
@@ -10,7 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  Receipt
+  Receipt,
+  MessageSquare
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,7 +27,8 @@ const Layout = () => {
     { name: 'Attendance', href: '/attendance', icon: UserCheck },
     { name: 'Payments', href: '/payments', icon: DollarSign },
     { name: 'Expenses', href: '/expenses', icon: Receipt },
-    { name: 'Reports', href: '/reports', icon: FileText }
+    { name: 'Reports', href: '/reports', icon: FileText },
+    { name: 'Enquiries', href: '/enquiries', icon: MessageSquare }
   ];
 
   const handleLogout = () => {
@@ -57,8 +58,8 @@ const Layout = () => {
                   to={item.href}
                   data-testid={`nav-${item.name.toLowerCase()}`}
                   className={`flex items-center px-4 h-12 rounded-lg font-medium transition-colors ${isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-text-muted hover:bg-secondary hover:text-text-main'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-text-muted hover:bg-secondary hover:text-text-main'
                     }`}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
@@ -115,8 +116,8 @@ const Layout = () => {
                     onClick={() => setMobileMenuOpen(false)}
                     data-testid={`mobile-nav-${item.name.toLowerCase()}`}
                     className={`flex items-center px-4 h-12 rounded-lg font-medium transition-colors ${isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-text-muted hover:bg-secondary hover:text-text-main'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-text-muted hover:bg-secondary hover:text-text-main'
                       }`}
                   >
                     <item.icon className="w-5 h-5 mr-3" />

@@ -207,6 +207,39 @@ class Expense(BaseModel):
     cancelled_by: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class EnquiryCreate(BaseModel):
+    name: str
+    phone_number: str
+    package_interest: str
+    source: str
+    status: str = "New"
+    follow_up_date: Optional[datetime] = None
+    trial_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class EnquiryUpdate(BaseModel):
+    name: Optional[str] = None
+    phone_number: Optional[str] = None
+    package_interest: Optional[str] = None
+    source: Optional[str] = None
+    status: Optional[str] = None
+    follow_up_date: Optional[datetime] = None
+    trial_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class Enquiry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    phone_number: str
+    package_interest: str
+    source: str
+    status: str = "New"
+    follow_up_date: Optional[datetime] = None
+    trial_date: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # =============== AUTH HELPERS ===============
 
 def verify_password(plain_password, hashed_password):
@@ -1065,6 +1098,57 @@ async def get_financial_summary(month: Optional[str] = None, current_user: User 
 async def get_notifications(current_user: User = Depends(get_current_user)):
     notifications = await db.notifications_log.find({}, {"_id": 0}).sort("sent_at", -1).to_list(1000)
     return notifications
+
+# =============== ENQUIRIES API ===============
+
+@api_router.get("/enquiries", response_model=List[Enquiry])
+async def get_enquiries(current_user: User = Depends(get_current_user)):
+    enquiries = await db.enquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return enquiries
+
+@api_router.post("/enquiries", response_model=Enquiry)
+async def create_enquiry(enquiry_data: EnquiryCreate, current_user: User = Depends(get_current_user)):
+    enquiry = Enquiry(**enquiry_data.model_dump())
+    await db.enquiries.insert_one(enquiry.model_dump())
+    return enquiry
+
+@api_router.put("/enquiries/{enquiry_id}", response_model=Enquiry)
+async def update_enquiry(enquiry_id: str, enquiry_data: EnquiryUpdate, current_user: User = Depends(get_current_user)):
+    enquiry = await db.enquiries.find_one({"id": enquiry_id})
+    if not enquiry:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+    
+    update_data = {k: v for k, v in enquiry_data.model_dump().items() if v is not None}
+    if not update_data:
+        return enquiry
+        
+    await db.enquiries.update_one(
+        {"id": enquiry_id},
+        {"$set": update_data}
+    )
+    
+    updated_enquiry = await db.enquiries.find_one({"id": enquiry_id}, {"_id": 0})
+    return updated_enquiry
+
+@api_router.delete("/enquiries/{enquiry_id}")
+async def delete_enquiry(enquiry_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.enquiries.delete_one({"id": enquiry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+    return {"status": "success", "message": "Enquiry deleted"}
+
+@api_router.post("/enquiries/{enquiry_id}/convert")
+async def convert_enquiry(enquiry_id: str, current_user: User = Depends(get_current_user)):
+    enquiry = await db.enquiries.find_one({"id": enquiry_id})
+    if not enquiry:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+    
+    await db.enquiries.update_one(
+        {"id": enquiry_id},
+        {"$set": {"status": "Joined"}}
+    )
+    
+    return {"status": "success", "message": "Enquiry converted to Member."}
 
 # Include the router in the main app
 app.include_router(api_router)
