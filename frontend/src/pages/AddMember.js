@@ -179,6 +179,18 @@ const AddMember = () => {
         const response = await axios.post(`${API}/members`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
+
+        // Mark Enquiry as Joined if we started from an Enquiry
+        if (location.state?.enquiryId) {
+          try {
+            await axios.post(`${API}/enquiries/${location.state.enquiryId}/convert`, {}, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          } catch (err) {
+            console.error('Error marking enquiry as joined:', err);
+          }
+        }
+
         toast.success('Member added successfully');
 
         // Show Invoice options

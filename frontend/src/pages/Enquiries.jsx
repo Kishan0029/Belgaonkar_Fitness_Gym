@@ -72,25 +72,16 @@ const Enquiries = () => {
         window.location.href = `tel:${phone}`;
     };
 
-    const handleConvert = async (enquiry) => {
-        try {
-            await axios.post(`${API}/enquiries/${enquiry.id}/convert`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            toast.success('Converted to member!');
-            fetchEnquiries();
-            // Redirect to Add Member
-            navigate('/members/add', {
-                state: {
-                    name: enquiry.name,
-                    phone_number: enquiry.phone_number,
-                    package_interest: enquiry.package_interest
-                }
-            });
-        } catch (error) {
-            console.error('Error converting:', error);
-            toast.error('Failed to convert enquiry.');
-        }
+    const handleConvert = (enquiry) => {
+        // Redirect to Add Member and pass enquiry details + ID
+        navigate('/members/add', {
+            state: {
+                enquiryId: enquiry.id,
+                name: enquiry.name,
+                phone_number: enquiry.phone_number,
+                package_interest: enquiry.package_interest
+            }
+        });
     };
 
     const handleDelete = async (id) => {
@@ -239,9 +230,9 @@ const Enquiries = () => {
                                         <td className="px-6 py-4 text-sm text-text-muted">{e.source}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${e.status === 'Joined' ? 'bg-green-100 text-green-700 border-green-200' :
-                                                    e.status === 'New' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                                        e.status === 'Interested' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-                                                            'bg-slate-100 text-slate-700 border-slate-200'
+                                                e.status === 'New' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                                    e.status === 'Interested' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                                                        'bg-slate-100 text-slate-700 border-slate-200'
                                                 }`}>
                                                 {e.status}
                                             </span>
