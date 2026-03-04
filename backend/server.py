@@ -941,6 +941,7 @@ async def generate_invoice(payment_id: str):
         phone=member['phone_number'],
         package=package['package_name'] if package else 'N/A',
         duration=str(package['duration_days']) if package else "0",
+        start_date=start_date.strftime('%d %B %Y'),
         expiry=end_date.strftime('%d %B %Y'),
         total=f"{member['total_amount']:.2f}",
         paid=f"{current_paid:.2f}",
