@@ -892,109 +892,203 @@ async def generate_invoice(payment_id: str):
     c = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Header
+    # Background #eef2f5
+    c.setFillColorRGB(238/255.0, 242/255.0, 245/255.0)
+    c.rect(0, 0, width, height, stroke=0, fill=1)
+    
+    # White container
+    container_margin = 40
+    box_w = width - (container_margin * 2)
+    box_h = height - (container_margin * 2)
+    c.setFillColorRGB(1, 1, 1)
+    c.roundRect(container_margin, container_margin, box_w, box_h, 10, stroke=0, fill=1)
+    
+    # Inner layout params
+    inner_pad = 40
+    cx = container_margin + inner_pad
+    cy = height - container_margin - inner_pad
+    c_width = box_w - (inner_pad * 2)
+    right_align = cx + c_width
+    
+    # HEADER
+    # Logo Left
     logo_url = "https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png"
     try:
         logo = ImageReader(logo_url)
-        c.drawImage(logo, 1 * inch, height - 1.2 * inch, width=0.8 * inch, height=0.8 * inch, preserveAspectRatio=True, mask='auto')
-        c.setFont("Helvetica-Bold", 24)
-        c.drawString(2 * inch, height - 1 * inch, "INVOICE")
+        c.drawImage(logo, cx, cy - 60, width=60, height=60, preserveAspectRatio=True, mask='auto')
     except Exception as e:
-        c.setFont("Helvetica-Bold", 24)
-        c.drawString(1 * inch, height - 1 * inch, "INVOICE")
-    
-    c.setFont("Helvetica", 10)
-    c.drawRightString(width - 1 * inch, height - 1 * inch, payment['invoice_number'])
-    c.drawRightString(width - 1 * inch, height - 1.2 * inch, f"Payment Date: {payment_date.strftime('%d %B %Y')}")
-    
-    # Line
-    c.line(1 * inch, height - 1.4 * inch, width - 1 * inch, height - 1.4 * inch)
-    
-    # Gym details
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(1 * inch, height - 1.7 * inch, "Belgaonkar Fitness Gym")
-    c.setFont("Helvetica", 10)
-    c.drawString(1 * inch, height - 1.85 * inch, "Owner: Rajesh")
-    c.drawString(1 * inch, height - 2.0 * inch, "Phone: +91 8088019393")
-    c.drawString(1 * inch, height - 2.15 * inch, "First Gate Above Dr Yalgi Clinic, Near Invitation Hotel")
-    c.drawString(1 * inch, height - 2.3 * inch, "Tilakwadi Belgaum, Belagavi, Karnataka 590006")
-    
-    # Member details
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 2.8 * inch, "MEMBER DETAILS")
-    c.setFont("Helvetica", 10)
-    c.drawString(1 * inch, height - 3.0 * inch, member['full_name'])
-    c.drawString(1 * inch, height - 3.2 * inch, f"Phone: {member['phone_number']}")
-    
-    # Membership info
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 3.6 * inch, "MEMBERSHIP INFORMATION")
-    
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 3.9 * inch, "Package")
-    c.drawString(3 * inch, height - 3.9 * inch, "Start Date")
-    c.drawString(4.5 * inch, height - 3.9 * inch, "End Date")
-    c.drawString(6 * inch, height - 3.9 * inch, "Total Amount")
-    
-    c.line(1 * inch, height - 4.0 * inch, width - 1 * inch, height - 4.0 * inch)
-    
-    c.setFont("Helvetica", 10)
-    c.drawString(1 * inch, height - 4.2 * inch, package['package_name'] if package else 'N/A')
-    c.drawString(3 * inch, height - 4.2 * inch, start_date.strftime('%d %B %Y'))
-    c.drawString(4.5 * inch, height - 4.2 * inch, end_date.strftime('%d %B %Y'))
-    c.drawString(6 * inch, height - 4.2 * inch, f"Rs {member['total_amount']:.2f}")
-    
-    c.line(1 * inch, height - 4.4 * inch, width - 1 * inch, height - 4.4 * inch)
-    
-    # Payment Breakdown
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 4.9 * inch, "PAYMENT BREAKDOWN")
-    
-    c.drawString(1 * inch, height - 5.2 * inch, "Description")
-    c.drawString(6 * inch, height - 5.2 * inch, "Amount")
-    c.line(1 * inch, height - 5.3 * inch, width - 1 * inch, height - 5.3 * inch)
-    
-    c.setFont("Helvetica", 10)
-    y = height - 5.5 * inch
-    
-    if previous_paid > 0:
-        c.drawString(1 * inch, y, "Previous Payments")
-        c.drawString(6 * inch, y, f"Rs {previous_paid:.2f}")
-        y -= 0.2 * inch
+        pass
         
-    c.drawString(1 * inch, y, "Current Payment")
-    c.drawString(6 * inch, y, f"Rs {current_paid:.2f}")
-    y -= 0.2 * inch
+    # Title Right
+    c.setFont("Helvetica-Bold", 32)
+    c.setFillColorRGB(0, 0, 0)
+    c.drawRightString(right_align, cy - 25, "INVOICE")
     
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, y, "Total Paid")
-    c.drawString(6 * inch, y, f"Rs {total_paid_so_far:.2f}")
-    y -= 0.2 * inch
+    # Invoice ID (below title)
+    c.setFont("Helvetica", 14)
+    c.setFillColorRGB(85/255.0, 85/255.0, 85/255.0) # #555
+    c.drawRightString(right_align, cy - 45, f"Invoice ID: {payment['invoice_number']}")
     
-    if balance_remaining > 0:
-        c.setFillColorRGB(0.8, 0, 0)
-        c.drawString(1 * inch, y, "Balance Due")
-        c.drawString(6 * inch, y, f"Rs {balance_remaining:.2f}")
+    cy -= 85
+    
+    # Divider #ddd
+    c.setStrokeColorRGB(221/255.0, 221/255.0, 221/255.0)
+    c.setLineWidth(1)
+    c.line(cx, cy, right_align, cy)
+    cy -= 25
+    
+    # GYM INFO & DATE
+    c.setFont("Helvetica-Bold", 14)
+    c.setFillColorRGB(0, 0, 0)
+    c.drawString(cx, cy, "Belgaonkar Fitness Gym")
+    c.setFont("Helvetica", 14)
+    c.drawString(cx, cy - 18, "Owner: Rajesh")
+    c.drawString(cx, cy - 36, "First Gate Above Dr Yalgi Clinic")
+    c.drawString(cx, cy - 54, "Near Invitation Hotel")
+    c.drawString(cx, cy - 72, "Tilakwadi Belgaum, Belagavi")
+    c.drawString(cx, cy - 90, "Karnataka 590006")
+    c.drawString(cx, cy - 108, "Phone: 8088019393")
+    
+    # Date (Right aligned)
+    date_str_y = cy - 18
+    c.drawString(right_align - c.stringWidth(payment_date.strftime('%d %B %Y'), "Helvetica-Bold", 14), cy, "Date:")
+    c.setFont("Helvetica-Bold", 14)
+    c.drawRightString(right_align, date_str_y, payment_date.strftime('%d %B %Y'))
+    
+    cy -= 140
+    
+    # MEMBER DETAILS
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0) # #666
+    c.drawString(cx, cy, "MEMBER DETAILS")
+    cy -= 10
+    
+    # Member Box #f3f5f7
+    c.setFillColorRGB(243/255.0, 245/255.0, 247/255.0)
+    c.roundRect(cx, cy - 60, c_width, 60, 8, stroke=0, fill=1)
+    c.setFillColorRGB(0, 0, 0)
+    
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(cx + 15, cy - 25, "Name")
+    c.drawString(cx + 15, cy - 45, "Phone")
+    c.setFont("Helvetica", 14)
+    c.drawString(cx + 100, cy - 25, member['full_name'])
+    c.drawString(cx + 100, cy - 45, member['phone_number'])
+    
+    cy -= 90
+    
+    # MEMBERSHIP
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0) # #666
+    c.drawString(cx, cy, "MEMBERSHIP")
+    cy -= 15
+    
+    # Table Header #111 bg
+    c.setFillColorRGB(17/255.0, 17/255.0, 17/255.0) # #111
+    c.rect(cx, cy - 30, c_width, 30, stroke=0, fill=1)
+    c.setFillColorRGB(1, 1, 1)
+    c.setFont("Helvetica", 14)
+    c.drawString(cx + 15, cy - 20, "Package")
+    c.drawString(cx + 200, cy - 20, "Duration")
+    c.drawString(cx + 350, cy - 20, "Expiry Date")
+    
+    cy -= 30
+    c.setFillColorRGB(0, 0, 0)
+    cy -= 25
+    c.drawString(cx + 15, cy, package['package_name'] if package else 'N/A')
+    c.drawString(cx + 200, cy, f"{package['duration_days'] if package else 0} days")
+    c.drawString(cx + 350, cy, end_date.strftime('%d %B %Y'))
+    
+    # Divider #eee
+    cy -= 15
+    c.setStrokeColorRGB(238/255.0, 238/255.0, 238/255.0)
+    c.line(cx, cy, right_align, cy)
+    
+    cy -= 45
+    
+    # PAYMENT
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0) # #666
+    c.drawString(cx, cy, "PAYMENT")
+    cy -= 25
+    
+    def draw_pay_row(label, val, y_cur):
         c.setFillColorRGB(0, 0, 0)
-        y -= 0.2 * inch
-        
-    c.line(1 * inch, y + 0.1 * inch, width - 1 * inch, y + 0.1 * inch)
+        c.setFont("Helvetica", 14)
+        c.drawString(cx, y_cur, label)
+        c.drawRightString(right_align, y_cur, str(val))
     
-    y -= 0.3 * inch
-    c.setFont("Helvetica-Bold", 12)
-    c.drawRightString(width - 1 * inch, y, f"Paid via {payment['payment_mode']}")
+    draw_pay_row("Total Amount", f"Rs {member['total_amount']:.2f}", cy)
+    cy -= 25
+    draw_pay_row("Paid", f"Rs {current_paid:.2f}", cy)
+    cy -= 25
+    draw_pay_row("Pending", f"Rs {balance_remaining:.2f}", cy)
+    cy -= 25
+    draw_pay_row("Payment Mode", payment['payment_mode'], cy)
+    cy -= 35
     
     # Refund Policy
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(1 * inch, 2.0 * inch, "Refund Policy:")
-    c.setFont("Helvetica", 9)
-    c.drawString(1 * inch, 1.85 * inch, "All payments are final. No refunds will be issued once payment is processed.")
-    c.drawString(1 * inch, 1.7 * inch, "Memberships cannot be transferred.")
-
-    # Footer
-    c.setFont("Helvetica-Oblique", 10)
-    c.drawCentredString(width / 2.0, 1 * inch, "Thank you for choosing Belgaonkar Fitness.")
-    c.drawCentredString(width / 2.0, 0.8 * inch, "Stay consistent. Stay strong.")
+    c.setFont("Helvetica-Bold", 12)
+    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0)
+    c.drawString(cx, cy, "Refund Policy:")
+    cy -= 18
+    c.setFont("Helvetica", 12)
+    c.drawString(cx, cy, "All payments are final. No refunds will be issued once payment is processed.")
+    cy -= 18
+    c.drawString(cx, cy, "Memberships cannot be transferred.")
+    
+    # NEXTVERSE BRANDING AT ABSOLUTE BOTTOM
+    branding_y = container_margin + 60
+    # Add border-t border-border line
+    c.setStrokeColorRGB(221/255.0, 221/255.0, 221/255.0)
+    c.line(cx, branding_y + 40, right_align, branding_y + 40)
+    
+    # Gym Software Engineered by Nextverse
+    brand_text_1 = "Gym Software Engineered by "
+    brand_text_2 = "Nextverse"
+    font_size = 13
+    
+    w1 = c.stringWidth(brand_text_1, "Helvetica", font_size)
+    w2 = c.stringWidth(brand_text_2, "Helvetica-Bold", font_size)
+    total_w = w1 + w2
+    start_x = (width - total_w) / 2.0
+    
+    c.setFont("Helvetica", font_size)
+    c.setFillColorRGB(51/255.0, 51/255.0, 51/255.0) # #333
+    c.drawString(start_x, branding_y + 15, brand_text_1)
+    
+    c.setFont("Helvetica-Bold", font_size)
+    c.setFillColorRGB(242/255.0, 82/255.0, 82/255.0) # #f25252
+    c.drawString(start_x + w1, branding_y + 15, brand_text_2)
+    
+    import pathlib
+    base_dir = pathlib.Path(__file__).parent.parent
+    nv_logo_path = base_dir / "frontend" / "src" / "assets" / "nextverse_horizontal.png"
+    
+    nv_width = 120
+    nv_height = 30
+    logo_x = (width - nv_width)/2.0
+    logo_y = branding_y - 25
+    
+    try:
+        if nv_logo_path.exists():
+            nv_logo = ImageReader(str(nv_logo_path))
+            c.drawImage(nv_logo, logo_x, logo_y, width=nv_width, height=nv_height, preserveAspectRatio=True, mask='auto')
+        else:
+            c.setFont("Helvetica-Bold", 14)
+            c.setFillColorRGB(0, 0, 0)
+            c.drawCentredString(width / 2.0, logo_y + 10, "Nextverse")
+    except Exception as e:
+        pass
+        
+    c.linkURL("https://gonextverse.in", (logo_x, logo_y, logo_x + nv_width, logo_y + nv_height), relative=1)
+    
+    # Link
+    c.setFont("Helvetica", 12)
+    c.setFillColorRGB(115/255.0, 115/255.0, 115/255.0) # #737373
+    link_y = logo_y - 20
+    c.drawCentredString(width / 2.0, link_y, "gonextverse.in")
+    c.linkURL("https://gonextverse.in", (width/2 - 60, link_y - 5, width/2 + 60, link_y + 10), relative=1)
     
     c.showPage()
     c.save()
