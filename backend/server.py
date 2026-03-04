@@ -545,11 +545,8 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
     payment_records = await db.payments.find({"member_id": member_id}, {"_id": 0}).to_list(1000)
     derived_total_paid = sum(p["amount_paid"] for p in payment_records)
 
-    if "total_amount" in update_dict and derived_total_paid > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Total amount cannot be modified after payment has been recorded."
-        )
+    if "total_amount" in update_dict and len(payment_records) > 0:
+        del update_dict["total_amount"]
 
     new_total_amount = update_dict.get("total_amount", member.get("total_amount", 0))
     update_dict["payment_status"] = "Paid" if derived_total_paid >= new_total_amount else "Partial"
@@ -915,47 +912,50 @@ async def generate_invoice(payment_id: str):
     
     # Gym details
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(1 * inch, height - 1.7 * inch, "Belgaonkar Fitness")
+    c.drawString(1 * inch, height - 1.7 * inch, "Belgaonkar Fitness Gym")
     c.setFont("Helvetica", 10)
-    c.drawString(1 * inch, height - 1.9 * inch, "Phone: +91 9876543210")
+    c.drawString(1 * inch, height - 1.85 * inch, "Owner: Rajesh")
+    c.drawString(1 * inch, height - 2.0 * inch, "Phone: +91 8088019393")
+    c.drawString(1 * inch, height - 2.15 * inch, "First Gate Above Dr Yalgi Clinic, Near Invitation Hotel")
+    c.drawString(1 * inch, height - 2.3 * inch, "Tilakwadi Belgaum, Belagavi, Karnataka 590006")
     
     # Member details
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 2.4 * inch, "MEMBER DETAILS")
+    c.drawString(1 * inch, height - 2.8 * inch, "MEMBER DETAILS")
     c.setFont("Helvetica", 10)
-    c.drawString(1 * inch, height - 2.6 * inch, member['full_name'])
-    c.drawString(1 * inch, height - 2.8 * inch, f"Phone: {member['phone_number']}")
+    c.drawString(1 * inch, height - 3.0 * inch, member['full_name'])
+    c.drawString(1 * inch, height - 3.2 * inch, f"Phone: {member['phone_number']}")
     
     # Membership info
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 3.3 * inch, "MEMBERSHIP INFORMATION")
+    c.drawString(1 * inch, height - 3.6 * inch, "MEMBERSHIP INFORMATION")
     
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 3.6 * inch, "Package")
-    c.drawString(3 * inch, height - 3.6 * inch, "Start Date")
-    c.drawString(4.5 * inch, height - 3.6 * inch, "End Date")
-    c.drawString(6 * inch, height - 3.6 * inch, "Total Amount")
+    c.drawString(1 * inch, height - 3.9 * inch, "Package")
+    c.drawString(3 * inch, height - 3.9 * inch, "Start Date")
+    c.drawString(4.5 * inch, height - 3.9 * inch, "End Date")
+    c.drawString(6 * inch, height - 3.9 * inch, "Total Amount")
     
-    c.line(1 * inch, height - 3.7 * inch, width - 1 * inch, height - 3.7 * inch)
+    c.line(1 * inch, height - 4.0 * inch, width - 1 * inch, height - 4.0 * inch)
     
     c.setFont("Helvetica", 10)
-    c.drawString(1 * inch, height - 3.9 * inch, package['package_name'] if package else 'N/A')
-    c.drawString(3 * inch, height - 3.9 * inch, start_date.strftime('%d %B %Y'))
-    c.drawString(4.5 * inch, height - 3.9 * inch, end_date.strftime('%d %B %Y'))
-    c.drawString(6 * inch, height - 3.9 * inch, f"Rs {member['total_amount']:.2f}")
+    c.drawString(1 * inch, height - 4.2 * inch, package['package_name'] if package else 'N/A')
+    c.drawString(3 * inch, height - 4.2 * inch, start_date.strftime('%d %B %Y'))
+    c.drawString(4.5 * inch, height - 4.2 * inch, end_date.strftime('%d %B %Y'))
+    c.drawString(6 * inch, height - 4.2 * inch, f"Rs {member['total_amount']:.2f}")
     
-    c.line(1 * inch, height - 4.1 * inch, width - 1 * inch, height - 4.1 * inch)
+    c.line(1 * inch, height - 4.4 * inch, width - 1 * inch, height - 4.4 * inch)
     
     # Payment Breakdown
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(1 * inch, height - 4.6 * inch, "PAYMENT BREAKDOWN")
+    c.drawString(1 * inch, height - 4.9 * inch, "PAYMENT BREAKDOWN")
     
-    c.drawString(1 * inch, height - 4.9 * inch, "Description")
-    c.drawString(6 * inch, height - 4.9 * inch, "Amount")
-    c.line(1 * inch, height - 5.0 * inch, width - 1 * inch, height - 5.0 * inch)
+    c.drawString(1 * inch, height - 5.2 * inch, "Description")
+    c.drawString(6 * inch, height - 5.2 * inch, "Amount")
+    c.line(1 * inch, height - 5.3 * inch, width - 1 * inch, height - 5.3 * inch)
     
     c.setFont("Helvetica", 10)
-    y = height - 5.2 * inch
+    y = height - 5.5 * inch
     
     if previous_paid > 0:
         c.drawString(1 * inch, y, "Previous Payments")
@@ -984,6 +984,13 @@ async def generate_invoice(payment_id: str):
     c.setFont("Helvetica-Bold", 12)
     c.drawRightString(width - 1 * inch, y, f"Paid via {payment['payment_mode']}")
     
+    # Refund Policy
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(1 * inch, 2.0 * inch, "Refund Policy:")
+    c.setFont("Helvetica", 9)
+    c.drawString(1 * inch, 1.85 * inch, "All payments are final. No refunds will be issued once payment is processed.")
+    c.drawString(1 * inch, 1.7 * inch, "Memberships cannot be transferred.")
+
     # Footer
     c.setFont("Helvetica-Oblique", 10)
     c.drawCentredString(width / 2.0, 1 * inch, "Thank you for choosing Belgaonkar Fitness.")
@@ -1090,22 +1097,23 @@ async def cancel_expense(expense_id: str, current_user: User = Depends(get_curre
 
 @api_router.get("/financial-summary")
 async def get_financial_summary(month: Optional[str] = None, current_user: User = Depends(get_current_user)):
-    # Default to current month if not provided
-    if not month:
-        current_time = datetime.now(timezone.utc)
-        month = f"{current_time.year}-{current_time.month:02d}"
-        
-    # Attempt to parse month to get start and end dates
-    try:
-        year, month_int = map(int, month.split('-'))
-        start_date = datetime(year, month_int, 1, tzinfo=timezone.utc)
-        # Next month start date
-        if month_int == 12:
-            end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    current_time = datetime.now(timezone.utc)
+    today_day = current_time.day
+    
+    if today_day < 15:
+        if current_time.month == 1:
+            start_date = datetime(current_time.year - 1, 12, 15, tzinfo=timezone.utc)
         else:
-            end_date = datetime(year, month_int + 1, 1, tzinfo=timezone.utc)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
+            start_date = datetime(current_time.year, current_time.month - 1, 15, tzinfo=timezone.utc)
+        end_date = datetime(current_time.year, current_time.month, 15, tzinfo=timezone.utc)
+    else:
+        start_date = datetime(current_time.year, current_time.month, 15, tzinfo=timezone.utc)
+        if current_time.month == 12:
+            end_date = datetime(current_time.year + 1, 1, 15, tzinfo=timezone.utc)
+        else:
+            end_date = datetime(current_time.year, current_time.month + 1, 15, tzinfo=timezone.utc)
+            
+    month = f"{start_date.strftime('%d %b %Y')} - {(end_date - timedelta(days=1)).strftime('%d %b %Y')}"
         
     start_date_str = start_date.isoformat()
     end_date_str = end_date.isoformat()
