@@ -887,221 +887,42 @@ async def generate_invoice(payment_id: str):
     start_date = datetime.fromisoformat(member.get("membership_start_date", member["join_date"])) if isinstance(member.get("membership_start_date", member["join_date"]), str) else member.get("membership_start_date", member["join_date"])
     end_date = datetime.fromisoformat(member["expiry_date"]) if isinstance(member["expiry_date"], str) else member["expiry_date"]
     
-    # Generate PDF with ReportLab
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-    
-    # Background #eef2f5
-    c.setFillColorRGB(238/255.0, 242/255.0, 245/255.0)
-    c.rect(0, 0, width, height, stroke=0, fill=1)
-    
-    # White container
-    container_margin = 40
-    box_w = width - (container_margin * 2)
-    box_h = height - (container_margin * 2)
-    c.setFillColorRGB(1, 1, 1)
-    c.roundRect(container_margin, container_margin, box_w, box_h, 10, stroke=0, fill=1)
-    
-    # Inner layout params
-    inner_pad = 40
-    cx = container_margin + inner_pad
-    cy = height - container_margin - inner_pad
-    c_width = box_w - (inner_pad * 2)
-    right_align = cx + c_width
-    
-    # HEADER
-    # Logo Left
-    logo_url = "https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png"
-    try:
-        logo = ImageReader(logo_url)
-        c.drawImage(logo, cx, cy - 60, width=60, height=60, preserveAspectRatio=True, mask='auto')
-    except Exception as e:
-        pass
-        
-    # Title Right
-    c.setFont("Helvetica-Bold", 32)
-    c.setFillColorRGB(0, 0, 0)
-    c.drawRightString(right_align, cy - 25, "INVOICE")
-    
-    # Invoice ID (below title)
-    c.setFont("Helvetica", 14)
-    c.setFillColorRGB(85/255.0, 85/255.0, 85/255.0) # #555
-    c.drawRightString(right_align, cy - 45, f"Invoice ID: {payment['invoice_number']}")
-    
-    cy -= 85
-    
-    # Divider #ddd
-    c.setStrokeColorRGB(221/255.0, 221/255.0, 221/255.0)
-    c.setLineWidth(1)
-    c.line(cx, cy, right_align, cy)
-    cy -= 25
-    
-    # GYM INFO & DATE
-    c.setFont("Helvetica-Bold", 14)
-    c.setFillColorRGB(0, 0, 0)
-    c.drawString(cx, cy, "Belgaonkar Fitness Gym")
-    c.setFont("Helvetica", 14)
-    c.drawString(cx, cy - 18, "Owner: Rajesh")
-    c.drawString(cx, cy - 36, "First Gate Above Dr Yalgi Clinic")
-    c.drawString(cx, cy - 54, "Near Invitation Hotel")
-    c.drawString(cx, cy - 72, "Tilakwadi Belgaum, Belagavi")
-    c.drawString(cx, cy - 90, "Karnataka 590006")
-    c.drawString(cx, cy - 108, "Phone: 8088019393")
-    
-    # Date (Right aligned)
-    date_str_y = cy - 18
-    c.drawString(right_align - c.stringWidth(payment_date.strftime('%d %B %Y'), "Helvetica-Bold", 14), cy, "Date:")
-    c.setFont("Helvetica-Bold", 14)
-    c.drawRightString(right_align, date_str_y, payment_date.strftime('%d %B %Y'))
-    
-    cy -= 140
-    
-    # MEMBER DETAILS
-    c.setFont("Helvetica-Bold", 13)
-    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0) # #666
-    c.drawString(cx, cy, "MEMBER DETAILS")
-    cy -= 10
-    
-    # Member Box #f3f5f7
-    c.setFillColorRGB(243/255.0, 245/255.0, 247/255.0)
-    c.roundRect(cx, cy - 60, c_width, 60, 8, stroke=0, fill=1)
-    c.setFillColorRGB(0, 0, 0)
-    
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(cx + 15, cy - 25, "Name")
-    c.drawString(cx + 15, cy - 45, "Phone")
-    c.setFont("Helvetica", 14)
-    c.drawString(cx + 100, cy - 25, member['full_name'])
-    c.drawString(cx + 100, cy - 45, member['phone_number'])
-    
-    cy -= 90
-    
-    # MEMBERSHIP
-    c.setFont("Helvetica-Bold", 13)
-    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0) # #666
-    c.drawString(cx, cy, "MEMBERSHIP")
-    cy -= 15
-    
-    # Table Header #111 bg
-    c.setFillColorRGB(17/255.0, 17/255.0, 17/255.0) # #111
-    c.rect(cx, cy - 30, c_width, 30, stroke=0, fill=1)
-    c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica", 14)
-    c.drawString(cx + 15, cy - 20, "Package")
-    c.drawString(cx + 200, cy - 20, "Duration")
-    c.drawString(cx + 350, cy - 20, "Expiry Date")
-    
-    cy -= 30
-    c.setFillColorRGB(0, 0, 0)
-    cy -= 25
-    c.drawString(cx + 15, cy, package['package_name'] if package else 'N/A')
-    c.drawString(cx + 200, cy, f"{package['duration_days'] if package else 0} days")
-    c.drawString(cx + 350, cy, end_date.strftime('%d %B %Y'))
-    
-    # Divider #eee
-    cy -= 15
-    c.setStrokeColorRGB(238/255.0, 238/255.0, 238/255.0)
-    c.line(cx, cy, right_align, cy)
-    
-    cy -= 45
-    
-    # PAYMENT
-    c.setFont("Helvetica-Bold", 13)
-    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0) # #666
-    c.drawString(cx, cy, "PAYMENT")
-    cy -= 25
-    
-    def draw_pay_row(label, val, y_cur):
-        c.setFillColorRGB(0, 0, 0)
-        c.setFont("Helvetica", 14)
-        c.drawString(cx, y_cur, label)
-        c.drawRightString(right_align, y_cur, str(val))
-    
-    draw_pay_row("Total Amount", f"Rs {member['total_amount']:.2f}", cy)
-    cy -= 25
-    draw_pay_row("Paid", f"Rs {current_paid:.2f}", cy)
-    cy -= 25
-    draw_pay_row("Pending", f"Rs {balance_remaining:.2f}", cy)
-    cy -= 25
-    draw_pay_row("Payment Mode", payment['payment_mode'], cy)
-    cy -= 35
-    
-    # Refund Policy
-    c.setFont("Helvetica-Bold", 12)
-    c.setFillColorRGB(102/255.0, 102/255.0, 102/255.0)
-    c.drawString(cx, cy, "Refund Policy:")
-    cy -= 18
-    c.setFont("Helvetica", 12)
-    c.drawString(cx, cy, "All payments are final. No refunds will be issued once payment is processed.")
-    cy -= 18
-    c.drawString(cx, cy, "Memberships cannot be transferred.")
-    
-    # NEXTVERSE BRANDING AT ABSOLUTE BOTTOM
-    branding_y = container_margin + 60
-    # Add border-t border-border line
-    c.setStrokeColorRGB(221/255.0, 221/255.0, 221/255.0)
-    c.line(cx, branding_y + 40, right_align, branding_y + 40)
-    
-    # Gym Software Engineered by Nextverse
-    brand_text_1 = "Gym Software Engineered by "
-    brand_text_2 = "Nextverse"
-    font_size = 13
-    
-    w1 = c.stringWidth(brand_text_1, "Helvetica", font_size)
-    w2 = c.stringWidth(brand_text_2, "Helvetica-Bold", font_size)
-    total_w = w1 + w2
-    start_x = (width - total_w) / 2.0
-    
-    c.setFont("Helvetica", font_size)
-    c.setFillColorRGB(51/255.0, 51/255.0, 51/255.0) # #333
-    c.drawString(start_x, branding_y + 15, brand_text_1)
-    
-    c.setFont("Helvetica-Bold", font_size)
-    c.setFillColorRGB(242/255.0, 82/255.0, 82/255.0) # #f25252
-    c.drawString(start_x + w1, branding_y + 15, brand_text_2)
-    
+    from fastapi.responses import Response
+    from jinja2 import Environment, FileSystemLoader
+    from weasyprint import HTML
     import pathlib
+
+    env = Environment(loader=FileSystemLoader("templates"))
+    template = env.get_template("invoice.html")
+    
+    logo_url = "https://customer-assets.emergentagent.com/job_870dffc5-d23e-4d9b-9a17-fd80e664523e/artifacts/bpacos33_Belgaonkar%20Fitness%20Gym.png"
     base_dir = pathlib.Path(__file__).parent.parent
     nv_logo_path = base_dir / "frontend" / "src" / "assets" / "nextverse_horizontal.png"
     
-    nv_width = 120
-    nv_height = 30
-    logo_x = (width - nv_width)/2.0
-    logo_y = branding_y - 25
+    html_out = template.render(
+        logo_url=logo_url,
+        nextverse_logo=nv_logo_path.as_uri() if nv_logo_path.exists() else "",
+        invoice_number=payment['invoice_number'],
+        payment_date=payment_date.strftime('%d %B %Y'),
+        member_name=member['full_name'],
+        phone=member['phone_number'],
+        package=package['package_name'] if package else 'N/A',
+        duration=str(package['duration_days']) if package else "0",
+        expiry=end_date.strftime('%d %B %Y'),
+        total=f"{member['total_amount']:.2f}",
+        paid=f"{current_paid:.2f}",
+        pending=f"{balance_remaining:.2f}",
+        mode=payment['payment_mode']
+    )
     
-    try:
-        if nv_logo_path.exists():
-            nv_logo = ImageReader(str(nv_logo_path))
-            c.drawImage(nv_logo, logo_x, logo_y, width=nv_width, height=nv_height, preserveAspectRatio=True, mask='auto')
-        else:
-            c.setFont("Helvetica-Bold", 14)
-            c.setFillColorRGB(0, 0, 0)
-            c.drawCentredString(width / 2.0, logo_y + 10, "Nextverse")
-    except Exception as e:
-        pass
-        
-    c.linkURL("https://gonextverse.in", (logo_x, logo_y, logo_x + nv_width, logo_y + nv_height), relative=1)
-    
-    # Link
-    c.setFont("Helvetica", 12)
-    c.setFillColorRGB(115/255.0, 115/255.0, 115/255.0) # #737373
-    link_y = logo_y - 20
-    c.drawCentredString(width / 2.0, link_y, "gonextverse.in")
-    c.linkURL("https://gonextverse.in", (width/2 - 60, link_y - 5, width/2 + 60, link_y + 10), relative=1)
-    
-    c.showPage()
-    c.save()
-    
-    pdf = buffer.getvalue()
-    buffer.close()
+    pdf = HTML(string=html_out).write_pdf()
     
     safe_name = "".join(x for x in member['full_name'] if x.isalnum() or x in " -_").strip().replace(" ", "_").replace("__", "_")
     formatted_date = payment_date.strftime('%Y%m%d')
     file_name = f"Belgaonkar_Fitness_Invoice_{safe_name}_{formatted_date}.pdf"
     
-    return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={
-        "Content-Disposition": f"attachment; filename={file_name}"
+    return Response(content=pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="{file_name}"'
     })
 
 # =============== EXPENSES ROUTES ===============
