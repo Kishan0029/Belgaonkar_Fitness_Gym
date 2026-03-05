@@ -15,7 +15,8 @@ import {
   Download,
   Trash2,
   RefreshCw,
-  MessageCircle
+  MessageCircle,
+  Fingerprint
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -359,6 +360,15 @@ const MemberProfile = () => {
                   <p className="text-text-main">
                     {format(new Date(member.last_visit_date), 'dd MMM yyyy')}
                   </p>
+                </div>
+              </div>
+            )}
+            {member.biometric_enabled && (
+              <div className="flex items-center">
+                <Fingerprint className="w-5 h-5 text-text-muted mr-3" />
+                <div>
+                  <p className="text-sm text-text-muted">Biometric Access</p>
+                  <p className="text-text-main">Enabled (ID: {member.device_user_id})</p>
                 </div>
               </div>
             )}

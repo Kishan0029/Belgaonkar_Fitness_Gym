@@ -11,6 +11,8 @@ import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Expenses from "./pages/Expenses";
 import Enquiries from "./pages/Enquiries";
+import Devices from "./pages/Devices";
+import EntryMonitor from "./pages/EntryMonitor";
 import Layout from "./components/Layout";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -33,6 +35,8 @@ function App() {
             <Route path="payments" element={<Payments />} />
             <Route path="expenses" element={<Expenses />} />
             <Route path="enquiries" element={<Enquiries />} />
+            <Route path="devices" element={<Devices />} />
+            <Route path="entry-monitor" element={<EntryMonitor />} />
             <Route path="reports" element={<Reports />} />
           </Route>
         </Routes>

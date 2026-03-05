@@ -31,7 +31,9 @@ const AddMember = () => {
     assigned_trainer: '',
     date_of_birth: '',
     pt_plan: '',
-    pt_price: '0'
+    pt_price: '0',
+    device_user_id: '',
+    biometric_enabled: false
   });
 
   const [packagePrice, setPackagePrice] = useState(0);
@@ -91,7 +93,9 @@ const AddMember = () => {
         assigned_trainer: member.assigned_trainer || '',
         date_of_birth: member.date_of_birth ? member.date_of_birth.split('T')[0] : '',
         pt_plan: member.pt_plan || '',
-        pt_price: (member.pt_price || 0).toString()
+        pt_price: (member.pt_price || 0).toString(),
+        device_user_id: member.device_user_id || '',
+        biometric_enabled: member.biometric_enabled || false
       });
       setHasPaymentHistory(member.amount_paid > 0);
     } catch (error) {
@@ -141,6 +145,11 @@ const AddMember = () => {
         updated.total_amount = total.toString();
       }
 
+      // Checkbox support
+      if (e.target.type === 'checkbox') {
+        updated[name] = e.target.checked;
+      }
+
       return updated;
     });
   };
@@ -166,7 +175,9 @@ const AddMember = () => {
         membership_start_date: new Date(formData.membership_start_date).toISOString(),
         payment_mode: formData.payment_mode,
         date_of_birth: formData.date_of_birth ? new Date(formData.date_of_birth).toISOString() : null,
-        pt_plan: formData.pt_plan || null
+        pt_plan: formData.pt_plan || null,
+        device_user_id: formData.device_user_id || null,
+        biometric_enabled: formData.biometric_enabled
       };
 
       if (isEdit) {
@@ -630,6 +641,44 @@ const AddMember = () => {
                 <option value="Card">Card</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        {/* Biometric Integration */}
+        <div>
+          <h2 className="text-xl font-semibold text-text-main mb-4 font-heading">Biometric Access</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+            <div className="flex items-center space-x-3 mb-2 h-12">
+              <input
+                id="biometric_enabled"
+                type="checkbox"
+                name="biometric_enabled"
+                checked={formData.biometric_enabled}
+                onChange={handleChange}
+                className="w-5 h-5 text-primary bg-white border-border rounded focus:ring-primary focus:ring-2 cursor-pointer"
+              />
+              <label htmlFor="biometric_enabled" className="text-sm font-medium text-text-main cursor-pointer select-none">
+                Enable Biometric Attendance
+              </label>
+            </div>
+
+            {formData.biometric_enabled && (
+              <div>
+                <label htmlFor="device_user_id" className="block text-sm font-medium text-text-main mb-1.5">
+                  Device User ID *
+                </label>
+                <input
+                  id="device_user_id"
+                  type="text"
+                  name="device_user_id"
+                  value={formData.device_user_id}
+                  onChange={handleChange}
+                  required={formData.biometric_enabled}
+                  className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="ID from Fingerprint device (e.g. 1)"
+                />
+              </div>
+            )}
           </div>
         </div>
 

@@ -15,7 +15,9 @@ import {
   Cake,
   Phone,
   MessageCircle,
-  CalendarCheck
+  CalendarCheck,
+  Fingerprint,
+  Activity
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -137,6 +139,20 @@ const Dashboard = () => {
       icon: UserX,
       color: 'bg-slate-100 text-text-muted',
       testId: 'stat-inactive'
+    },
+    {
+      title: 'Biometric Devices',
+      value: `${stats?.biometric_devices_connected || 0} / ${stats?.biometric_devices_total || 0}`,
+      icon: Fingerprint,
+      color: 'bg-indigo-50 text-indigo-600',
+      testId: 'stat-devices'
+    },
+    {
+      title: "Today's Bio Entries",
+      value: stats?.biometric_entries_today || 0,
+      icon: Activity,
+      color: 'bg-teal-50 text-teal-600',
+      testId: 'stat-bio-entries'
     }
   ];
 
@@ -278,7 +294,7 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           to="/attendance"
           data-testid="quick-link-attendance"
@@ -307,6 +323,16 @@ const Dashboard = () => {
           <UserX className="w-8 h-8 text-text-muted mb-3" />
           <h3 className="font-semibold text-text-main mb-1">Inactive Members</h3>
           <p className="text-sm text-text-muted">Members not visited in 7 days</p>
+        </Link>
+
+        <Link
+          to="/entry-monitor"
+          data-testid="quick-link-monitor"
+          className="bg-white rounded-xl border border-border shadow-sm p-5 hover:border-indigo-500/50 hover:shadow-md transition-all"
+        >
+          <Activity className="w-8 h-8 text-indigo-500 mb-3" />
+          <h3 className="font-semibold text-text-main mb-1">Live Entry Monitor</h3>
+          <p className="text-sm text-text-muted">Watch real-time biometric access</p>
         </Link>
       </div>
     </div>

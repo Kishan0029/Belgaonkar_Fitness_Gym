@@ -95,6 +95,8 @@ class MemberCreate(BaseModel):
     pt_plan: Optional[str] = None  # None, alternate_day, daily
     pt_price: float = 0.0
     payment_mode: str = "Cash"
+    device_user_id: Optional[str] = None
+    biometric_enabled: bool = False
 
 class MemberUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -109,6 +111,8 @@ class MemberUpdate(BaseModel):
     date_of_birth: Optional[datetime] = None
     pt_plan: Optional[str] = None
     pt_price: Optional[float] = None
+    device_user_id: Optional[str] = None
+    biometric_enabled: Optional[bool] = None
 
 class MemberRenew(BaseModel):
     package_id: str
@@ -136,17 +140,47 @@ class Member(BaseModel):
     pt_price: float
     last_visit_date: Optional[datetime] = None
     extension_days: int = 0
+    device_user_id: Optional[str] = None
+    biometric_enabled: bool = False
     membership_history: List[dict] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AttendanceCreate(BaseModel):
     member_id: str
+    attendance_source: str = "manual"
 
 class Attendance(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     member_id: str
     checkin_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    attendance_source: str = "manual"
+    access_status: str = "granted"
+    access_denied_reason: Optional[str] = None
+
+class BiometricDeviceCreate(BaseModel):
+    device_name: str
+    ip_address: str
+    port: int = 4370
+    device_type: str = "zkteco"
+
+class BiometricDeviceUpdate(BaseModel):
+    device_name: Optional[str] = None
+    ip_address: Optional[str] = None
+    port: Optional[int] = None
+    device_type: Optional[str] = None
+    status: Optional[str] = None
+
+class BiometricDevice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    device_name: str
+    ip_address: str
+    port: int
+    device_type: str
+    status: str = "Disconnected"
+    last_sync: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PaymentCreate(BaseModel):
     member_id: str
@@ -179,6 +213,9 @@ class DashboardStats(BaseModel):
     todays_collection: float
     pending_payments: float
     inactive_members: int
+    biometric_devices_total: Optional[int] = 0
+    biometric_devices_connected: Optional[int] = 0
+    biometric_entries_today: Optional[int] = 0
 
 class ExpenseCreate(BaseModel):
     amount: float
@@ -456,7 +493,9 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         date_of_birth=member_data.date_of_birth,
         pt_plan=member_data.pt_plan,
         pt_price=member_data.pt_price,
-        extension_days=0
+        extension_days=0,
+        device_user_id=member_data.device_user_id,
+        biometric_enabled=member_data.biometric_enabled
     )
     
     member_dict = member.model_dump()
@@ -501,6 +540,10 @@ async def get_members(current_user: User = Depends(get_current_user)):
             member["extension_days"] = 0
         if "membership_start_date" not in member:
             member["membership_start_date"] = member["join_date"]
+        if "device_user_id" not in member:
+            member["device_user_id"] = None
+        if "biometric_enabled" not in member:
+            member["biometric_enabled"] = False
     return members
 
 @api_router.get("/members/{member_id}", response_model=Member)
@@ -520,6 +563,10 @@ async def get_member(member_id: str, current_user: User = Depends(get_current_us
         member["extension_days"] = 0
     if "membership_start_date" not in member:
         member["membership_start_date"] = member["join_date"]
+    if "device_user_id" not in member:
+        member["device_user_id"] = None
+    if "biometric_enabled" not in member:
+        member["biometric_enabled"] = False
     
     return Member(**member)
 
@@ -605,6 +652,10 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
         updated_member["extension_days"] = 0
     if "membership_start_date" not in updated_member:
         updated_member["membership_start_date"] = updated_member["join_date"]
+    if "device_user_id" not in updated_member:
+        updated_member["device_user_id"] = None
+    if "biometric_enabled" not in updated_member:
+        updated_member["biometric_enabled"] = False
     
     return Member(**updated_member)
 
@@ -843,13 +894,26 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         "last_visit_date": {"$lt": seven_days_ago.isoformat()}
     })
     
+    # Biometric stats
+    biometric_devices_total = await db.biometric_devices.count_documents({})
+    biometric_devices_connected = await db.biometric_devices.count_documents({
+        "status": "Connected"
+    })
+    biometric_entries_today = await db.attendance.count_documents({
+        "checkin_time": {"$gte": today_start.isoformat()},
+        "attendance_source": "biometric"
+    })
+    
     return DashboardStats(
         total_members=total_members,
         active_members=active_members,
         expiring_in_5_days=expiring,
         todays_collection=todays_collection,
         pending_payments=pending_payments,
-        inactive_members=inactive
+        inactive_members=inactive,
+        biometric_devices_total=biometric_devices_total,
+        biometric_devices_connected=biometric_devices_connected,
+        biometric_entries_today=biometric_entries_today
     )
 
 @api_router.get("/dashboard/expiring-members")
@@ -1151,6 +1215,59 @@ async def convert_enquiry(enquiry_id: str, current_user: User = Depends(get_curr
     
     return {"status": "success", "message": "Enquiry converted to Member."}
 
+# =============== BIOMETRIC DEVICE ROUTES ===============
+
+@api_router.get("/devices", response_model=List[BiometricDevice])
+async def get_devices(current_user: User = Depends(get_current_user)):
+    devices = await db.biometric_devices.find({}, {"_id": 0}).to_list(100)
+    return devices
+
+@api_router.post("/devices", response_model=BiometricDevice)
+async def create_device(device_data: BiometricDeviceCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage devices")
+    
+    device = BiometricDevice(**device_data.model_dump())
+    device_dict = device.model_dump()
+    device_dict["created_at"] = device_dict["created_at"].isoformat()
+    if device_dict.get("last_sync"):
+        device_dict["last_sync"] = device_dict["last_sync"].isoformat()
+        
+    await db.biometric_devices.insert_one(device_dict)
+    return device
+
+@api_router.patch("/devices/{device_id}", response_model=BiometricDevice)
+async def update_device(device_id: str, device_data: BiometricDeviceUpdate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage devices")
+    
+    update_dict = {k: v for k, v in device_data.model_dump(exclude_unset=True).items() if v is not None}
+    
+    if update_dict:
+        await db.biometric_devices.update_one({"id": device_id}, {"$set": update_dict})
+        
+    updated_device = await db.biometric_devices.find_one({"id": device_id}, {"_id": 0})
+    if not updated_device:
+        raise HTTPException(status_code=404, detail="Device not found")
+        
+    return BiometricDevice(**updated_device)
+
+@api_router.post("/devices/{device_id}/test")
+async def test_device_connection(device_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can test devices")
+        
+    device = await db.biometric_devices.find_one({"id": device_id}, {"_id": 0})
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+        
+    import sys
+    sys.path.append(str(Path(__file__).parent))
+    from workers.biometric_sync_worker import test_connection
+    success, message = await test_connection(device["ip_address"], device["port"])
+    
+    return {"status": "success" if success else "error", "message": message}
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -1176,7 +1293,15 @@ async def startup_event():
     scheduler.add_job(check_inactive_members, 'cron', hour=9, minute=0)  # Daily at 9 AM
     scheduler.add_job(check_birthdays, 'cron', hour=0, minute=0)  # Daily at midnight
     scheduler.start()
-    logger.info("Background scheduler started")
+    
+    # Start biometric sync task
+    import sys
+    import asyncio
+    sys.path.append(str(Path(__file__).parent))
+    from workers.biometric_sync_worker import start_biometric_sync
+    asyncio.create_task(start_biometric_sync(db))
+    
+    logger.info("Background scheduler started and Biometric Sync Worker initialized")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

@@ -11,7 +11,9 @@ import {
   Menu,
   X,
   Receipt,
-  MessageSquare
+  MessageSquare,
+  Fingerprint,
+  Activity
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -29,7 +31,9 @@ const Layout = () => {
     { name: 'Payments', href: '/payments', icon: DollarSign },
     { name: 'Expenses', href: '/expenses', icon: Receipt },
     { name: 'Reports', href: '/reports', icon: FileText },
-    { name: 'Enquiries', href: '/enquiries', icon: MessageSquare }
+    { name: 'Enquiries', href: '/enquiries', icon: MessageSquare },
+    { name: 'Devices', href: '/devices', icon: Fingerprint },
+    { name: 'Entry Monitor', href: '/entry-monitor', icon: Activity }
   ];
 
   const handleLogout = () => {
