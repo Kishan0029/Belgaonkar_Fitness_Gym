@@ -33,6 +33,7 @@ const MemberProfile = () => {
   const [attendanceStats, setAttendanceStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('Cash');
 
@@ -92,7 +93,7 @@ const MemberProfile = () => {
   const handleAddPayment = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(
+      const response = await axios.post(
         `${API}/payments`,
         {
           member_id: id,
@@ -103,7 +104,7 @@ const MemberProfile = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Payment recorded successfully');
-      setShowPaymentModal(false);
+      setPaymentSuccess(response.data);
       setPaymentAmount('');
       fetchMemberData();
     } catch (error) {
@@ -542,51 +543,99 @@ const MemberProfile = () => {
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold text-text-main mb-4 font-heading">Record Payment</h3>
-            <form onSubmit={handleAddPayment} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-main mb-1.5">Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  required
-                  data-testid="payment-amount-input"
-                  className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  placeholder="0.00"
-                />
+            {!paymentSuccess ? (
+              <>
+                <h3 className="text-xl font-semibold text-text-main mb-4 font-heading">Record Payment</h3>
+                <form onSubmit={handleAddPayment} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-text-main mb-1.5">Amount</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      required
+                      data-testid="payment-amount-input"
+                      className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-main mb-1.5">Payment Mode</label>
+                    <select
+                      value={paymentMode}
+                      onChange={(e) => setPaymentMode(e.target.value)}
+                      data-testid="payment-mode-select"
+                      className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Card">Card</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentModal(false)}
+                      className="flex-1 bg-white border border-border text-text-main hover:bg-secondary h-12 px-6 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      data-testid="submit-payment-button"
+                      className="flex-1 bg-primary text-primary-foreground hover:bg-primary-hover h-12 px-6 rounded-lg font-semibold shadow-sm transition-colors"
+                    >
+                      Record
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-10 h-10 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-text-main mb-2">Payment Successful!</h3>
+                <p className="text-text-muted mb-6">
+                  Payment of ₹{paymentSuccess.amount_paid} recorded for {member.full_name}
+                </p>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      const phone = member.phone_number.replace(/[^0-9]/g, '');
+                      const phoneWithCode = phone.startsWith('91') ? phone : `91${phone}`;
+                      const message = `Hi ${member.full_name}, we have received your payment of ₹${paymentSuccess.amount_paid}. Thank you for choosing Belgaonkar Fitness! Status: ${member.payment_status}`;
+                      window.open(`https://wa.me/${phoneWithCode}?text=${encodeURIComponent(message)}`, '_blank');
+                    }}
+                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#20BE5A] h-12 rounded-lg font-semibold transition-colors"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Send WhatsApp Receipt
+                  </button>
+
+                  <button
+                    onClick={() => downloadInvoice(paymentSuccess.id)}
+                    className="w-full flex items-center justify-center gap-2 bg-slate-100 text-text-main hover:bg-slate-200 h-12 rounded-lg font-semibold transition-colors"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download Invoice
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setPaymentSuccess(null);
+                    }}
+                    className="w-full h-12 text-text-muted hover:text-text-main font-medium transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-main mb-1.5">Payment Mode</label>
-                <select
-                  value={paymentMode}
-                  onChange={(e) => setPaymentMode(e.target.value)}
-                  data-testid="payment-mode-select"
-                  className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Card">Card</option>
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 bg-white border border-border text-text-main hover:bg-secondary h-12 px-6 rounded-lg font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  data-testid="submit-payment-button"
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-hover h-12 px-6 rounded-lg font-semibold shadow-sm transition-colors"
-                >
-                  Record
-                </button>
-              </div>
-            </form>
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -9,12 +10,13 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Payments = () => {
   const { token, isAdmin } = useAuth();
+  const [searchParams] = useSearchParams();
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [members, setMembers] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState(searchParams.get('date') || 'all');
 
   useEffect(() => {
     if (isAdmin) {
@@ -28,7 +30,7 @@ const Payments = () => {
 
   const filterPayments = () => {
     let filtered = [...payments];
-    
+
     if (searchQuery) {
       filtered = filtered.filter(p => {
         const member = members[p.member_id];
@@ -39,7 +41,7 @@ const Payments = () => {
         );
       });
     }
-    
+
     if (dateFilter !== 'all') {
       const now = new Date();
       filtered = filtered.filter(p => {
@@ -50,7 +52,7 @@ const Payments = () => {
         return true;
       });
     }
-    
+
     setFilteredPayments(filtered);
   };
 
@@ -64,9 +66,9 @@ const Payments = () => {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
-      
+
       setPayments(paymentsRes.data);
-      
+
       // Create member lookup
       const memberMap = {};
       membersRes.data.forEach(m => {
@@ -143,11 +145,10 @@ const Payments = () => {
               <button
                 key={filter}
                 onClick={() => setDateFilter(filter)}
-                className={`px-4 h-12 rounded-lg font-medium transition-colors ${
-                  dateFilter === filter
+                className={`px-4 h-12 rounded-lg font-medium transition-colors ${dateFilter === filter
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-white border border-border text-text-muted hover:bg-secondary'
-                }`}
+                  }`}
               >
                 {filter.charAt(0).toUpperCase() + filter.slice(1)}
               </button>

@@ -229,6 +229,7 @@ class ExpenseUpdate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     payment_mode: Optional[str] = None
+    
     expense_date: Optional[datetime] = None
 
 class Expense(BaseModel):

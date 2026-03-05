@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -10,10 +10,11 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Members = () => {
   const { token } = useAuth();
+  const [searchParams] = useSearchParams();
   const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // all, active, expired, expiring
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all'); // all, active, expired, expiring
   const [loading, setLoading] = useState(true);
   const [attendanceMarked, setAttendanceMarked] = useState({});
 

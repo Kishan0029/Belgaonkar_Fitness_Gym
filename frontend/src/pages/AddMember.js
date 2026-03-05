@@ -614,10 +614,11 @@ const AddMember = () => {
               <input
                 id="amount_paid"
                 type="number"
-                step="0.01"
+                step="any"
                 name="amount_paid"
                 value={formData.amount_paid}
                 onChange={handleChange}
+                onFocus={(e) => e.target.select()}
                 data-testid="amount-paid-input"
                 className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="0.00"

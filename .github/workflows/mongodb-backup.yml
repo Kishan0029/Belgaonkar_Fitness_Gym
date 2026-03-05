@@ -2,7 +2,7 @@ name: MongoDB Atlas Backup
 
 on:
   schedule:
-    - cron: '30 2 * * *'   # Runs daily at 02:30 UTC
+    - cron: '30 18 * * *'  # Runs daily at 00:30 IST (18:30 UTC)
   workflow_dispatch:
   push:
     branches:

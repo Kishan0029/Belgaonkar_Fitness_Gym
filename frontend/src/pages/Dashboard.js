@@ -103,56 +103,64 @@ const Dashboard = () => {
       value: stats?.total_members || 0,
       icon: Users,
       color: 'bg-blue-50 text-status-info',
-      testId: 'stat-total-members'
+      testId: 'stat-total-members',
+      path: '/members'
     },
     {
       title: 'Active Members',
       value: stats?.active_members || 0,
       icon: UserCheck,
       color: 'bg-green-50 text-status-success',
-      testId: 'stat-active-members'
+      testId: 'stat-active-members',
+      path: '/members?status=active'
     },
     {
       title: 'Expiring in 5 Days',
       value: stats?.expiring_in_5_days || 0,
       icon: AlertCircle,
       color: 'bg-yellow-50 text-status-warning',
-      testId: 'stat-expiring'
+      testId: 'stat-expiring',
+      path: '/reports?tab=expiring'
     },
     {
       title: "Today's Collection",
       value: `₹${stats?.todays_collection?.toFixed(2) || '0.00'}`,
       icon: DollarSign,
       color: 'bg-primary-light text-primary',
-      testId: 'stat-collection'
+      testId: 'stat-collection',
+      path: '/payments?date=today'
     },
     {
       title: 'Pending Payments',
       value: `₹${stats?.pending_payments?.toFixed(2) || '0.00'}`,
       icon: Clock,
       color: 'bg-red-50 text-status-error',
-      testId: 'stat-pending'
+      testId: 'stat-pending',
+      path: '/reports?tab=pending'
     },
     {
       title: 'Inactive Members (7d)',
       value: stats?.inactive_members || 0,
       icon: UserX,
       color: 'bg-slate-100 text-text-muted',
-      testId: 'stat-inactive'
+      testId: 'stat-inactive',
+      path: '/reports?tab=inactive'
     },
     {
       title: 'Biometric Devices',
       value: `${stats?.biometric_devices_connected || 0} / ${stats?.biometric_devices_total || 0}`,
       icon: Fingerprint,
       color: 'bg-indigo-50 text-indigo-600',
-      testId: 'stat-devices'
+      testId: 'stat-devices',
+      path: '/devices'
     },
     {
       title: "Today's Bio Entries",
       value: stats?.biometric_entries_today || 0,
       icon: Activity,
       color: 'bg-teal-50 text-teal-600',
-      testId: 'stat-bio-entries'
+      testId: 'stat-bio-entries',
+      path: '/entry-monitor'
     }
   ];
 
@@ -249,23 +257,24 @@ const Dashboard = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((stat) => (
-          <div
+          <Link
             key={stat.title}
+            to={stat.path}
             data-testid={stat.testId}
-            className="bg-white rounded-xl border border-border shadow-sm p-5 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl border border-border shadow-sm p-5 hover:shadow-md hover:border-primary/50 transition-all group"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm font-medium text-text-muted mb-2">{stat.title}</p>
+                <p className="text-sm font-medium text-text-muted mb-2 group-hover:text-primary transition-colors">{stat.title}</p>
                 <p className="text-2xl md:text-3xl font-bold text-text-main">{stat.value}</p>
               </div>
-              <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center`}>
+              <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
                 <stat.icon className="w-6 h-6" />
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
