@@ -16,7 +16,8 @@ import {
   Trash2,
   RefreshCw,
   MessageCircle,
-  Fingerprint
+  Fingerprint,
+  CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -250,7 +251,7 @@ const MemberProfile = () => {
   const expiry = new Date(member.expiry_date);
   const isExpired = expiry < now;
   const isExpiringSoon = !isExpired && expiry <= new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-  const pendingAmount = member.total_amount - member.amount_paid;
+  const pendingAmount = Math.round((member.total_amount - member.amount_paid) * 100) / 100;
 
   return (
     <div className="space-y-6">
@@ -554,6 +555,7 @@ const MemberProfile = () => {
                       step="any"
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
+                      onWheel={(e) => e.target.blur()}
                       onFocus={(e) => e.target.select()}
                       required
                       data-testid="payment-amount-input"
@@ -593,48 +595,50 @@ const MemberProfile = () => {
                 </form>
               </>
             ) : (
-              <div className="text-center py-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-10 h-10 text-green-600" />
+              paymentSuccess && (
+                <div className="text-center py-4 animate-in fade-in duration-300">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-10 h-10 text-green-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-text-main mb-2">Payment Successful!</h3>
+                  <p className="text-text-muted mb-6">
+                    Payment of ₹{paymentSuccess.amount_paid} recorded for {member?.full_name || 'Member'}
+                  </p>
+
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => {
+                        const phone = member.phone_number.replace(/[^0-9]/g, '');
+                        const phoneWithCode = phone.startsWith('91') ? phone : `91${phone}`;
+                        const message = `Hi ${member.full_name}, we have received your payment of ₹${paymentSuccess.amount_paid}. Thank you for choosing Belgaonkar Fitness! Status: ${member.payment_status}`;
+                        window.open(`https://wa.me/${phoneWithCode}?text=${encodeURIComponent(message)}`, '_blank');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#20BE5A] h-12 rounded-lg font-semibold transition-colors"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Send WhatsApp Receipt
+                    </button>
+
+                    <button
+                      onClick={() => downloadInvoice(paymentSuccess.id)}
+                      className="w-full flex items-center justify-center gap-2 bg-slate-100 text-text-main hover:bg-slate-200 h-12 rounded-lg font-semibold transition-colors"
+                    >
+                      <Download className="w-5 h-5" />
+                      Download Invoice
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowPaymentModal(false);
+                        setPaymentSuccess(null);
+                      }}
+                      className="w-full h-12 text-text-muted hover:text-text-main font-medium transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-                <h3 className="text-2xl font-bold text-text-main mb-2">Payment Successful!</h3>
-                <p className="text-text-muted mb-6">
-                  Payment of ₹{paymentSuccess.amount_paid} recorded for {member.full_name}
-                </p>
-
-                <div className="space-y-3">
-                  <button
-                    onClick={() => {
-                      const phone = member.phone_number.replace(/[^0-9]/g, '');
-                      const phoneWithCode = phone.startsWith('91') ? phone : `91${phone}`;
-                      const message = `Hi ${member.full_name}, we have received your payment of ₹${paymentSuccess.amount_paid}. Thank you for choosing Belgaonkar Fitness! Status: ${member.payment_status}`;
-                      window.open(`https://wa.me/${phoneWithCode}?text=${encodeURIComponent(message)}`, '_blank');
-                    }}
-                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#20BE5A] h-12 rounded-lg font-semibold transition-colors"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    Send WhatsApp Receipt
-                  </button>
-
-                  <button
-                    onClick={() => downloadInvoice(paymentSuccess.id)}
-                    className="w-full flex items-center justify-center gap-2 bg-slate-100 text-text-main hover:bg-slate-200 h-12 rounded-lg font-semibold transition-colors"
-                  >
-                    <Download className="w-5 h-5" />
-                    Download Invoice
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowPaymentModal(false);
-                      setPaymentSuccess(null);
-                    }}
-                    className="w-full h-12 text-text-muted hover:text-text-main font-medium transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
+              )
             )}
           </div>
         </div>
@@ -689,12 +693,16 @@ const MemberProfile = () => {
                   <label className="block text-sm font-medium text-text-main mb-1.5">Amount Paid</label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="any"
                     name="amount_paid"
                     value={renewData.amount_paid}
                     onChange={handleRenewChange}
+                    onWheel={(e) => e.target.blur()}
+                    onFocus={(e) => e.target.select()}
                     required
+                    data-testid="renew-amount-paid"
                     className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    placeholder="0.00"
                   />
                 </div>
                 <div>

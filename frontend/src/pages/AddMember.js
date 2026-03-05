@@ -108,7 +108,8 @@ const AddMember = () => {
     const pkg = parseFloat(pkgPrice) || 0;
     const disc = parseFloat(discount) || 0;
     const pt = parseFloat(ptPrice) || 0;
-    return pkg - disc + pt;
+    // Use Math.round to avoid floating point precision issues (e.g. 100 becoming 99.9)
+    return Math.round((pkg - disc + pt) * 100) / 100;
   };
 
   const handleChange = (e) => {
@@ -459,10 +460,12 @@ const AddMember = () => {
               <input
                 id="discount_amount"
                 type="number"
-                step="0.01"
+                step="any"
                 name="discount_amount"
                 value={formData.discount_amount}
                 onChange={handleChange}
+                onWheel={(e) => e.target.blur()}
+                onFocus={(e) => e.target.select()}
                 disabled={hasPaymentHistory}
                 data-testid="discount-input"
                 className={`w-full h-12 px-4 rounded-lg border border-border text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${hasPaymentHistory ? 'bg-gray-100 text-text-muted cursor-not-allowed' : 'bg-white'
@@ -618,6 +621,7 @@ const AddMember = () => {
                 name="amount_paid"
                 value={formData.amount_paid}
                 onChange={handleChange}
+                onWheel={(e) => e.target.blur()}
                 onFocus={(e) => e.target.select()}
                 data-testid="amount-paid-input"
                 className="w-full h-12 px-4 rounded-lg border border-border bg-white text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
